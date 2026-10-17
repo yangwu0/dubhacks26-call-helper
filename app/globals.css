@@ -122,9 +122,18 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-slate-50 text-slate-800;
   }
   html {
     @apply font-sans;
   }
+}
+
+.font-display {
+  font-family: var(--font-nunito), var(--font-geist-sans), ui-sans-serif, sans-serif;
+}
+
+.sift-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
 }
