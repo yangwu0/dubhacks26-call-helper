@@ -15,24 +15,6 @@ function stringList(value: unknown): string[] {
   return value.filter((item): item is string => typeof item === "string");
 }
 
-export function mapTranscript(value: unknown, prefix: string): TranscriptLine[] {
-  if (!Array.isArray(value)) return [];
-  const lines: TranscriptLine[] = [];
-  value.forEach((item, index) => {
-    if (!item || typeof item !== "object") return;
-    const row = item as { role?: unknown; message?: unknown; text?: unknown };
-    const body = text(row.message) || text(row.text);
-    if (!body) return;
-    lines.push({
-      id: `${prefix}-${index}`,
-      role: row.role === "agent" ? "agent" : "caller",
-      text: body,
-      at: "",
-    });
-  });
-  return lines;
-}
-
 type EventRow = {
   id?: number;
   call_id?: string;
@@ -49,19 +31,8 @@ function payloadRecord(value: unknown): Record<string, unknown> {
 export function mapCall(row: Record<string, unknown>, events: EventRow[] = []): CallRecord {
   const id = text(row.id);
   const related = events.filter((event) => event.call_id === id);
-  const transcript = mapTranscript(row.transcript, id);
-  for (const event of related) {
-    if (event.type !== "transcript") continue;
-    const payload = payloadRecord(event.payload);
-    const body = text(payload.message) || text(payload.text);
-    if (!body) continue;
-    transcript.push({
-      id: `event-${event.id ?? transcript.length}`,
-      role: payload.role === "agent" ? "agent" : "caller",
-      text: body,
-      at: text(event.created_at),
-    });
-  }
+  // Transcripts are not persisted; live demo uses mock data only.
+  const transcript: TranscriptLine[] = [];
 
   const riskTimeline: RiskPoint[] = [];
   for (const event of related) {

@@ -40,65 +40,68 @@ export function LiveTranscript({ lines }: { lines: TranscriptLine[] }) {
   }, [lines]);
 
   return (
-    <section className={`${cardClass} flex h-[min(560px,calc(100vh-18rem))] min-h-[360px] flex-col`}>
-      <header className="flex items-center justify-between px-6 pt-6">
-        <div>
-          <p className="text-sm text-slate-500">Conversation</p>
-          <h2 className="font-display text-2xl font-extrabold">Live transcript</h2>
+    <section
+      className={`${cardClass} flex h-[min(480px,calc(100vh-16rem))] min-h-[300px] flex-col`}
+    >
+      <div className="card-body flex min-h-0 flex-1 flex-col pb-2 pt-6">
+        <div className="flex shrink-0 items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-base-content/60">Conversation</p>
+            <h2 className="font-display text-xl font-bold">Live transcript</h2>
+          </div>
+          <span className="badge badge-neutral badge-soft font-bold">
+            {lines.length === 0 ? "Waiting" : `${lines.length} lines`}
+          </span>
         </div>
-        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">
-          {lines.length === 0 ? "Waiting" : `${lines.length} lines`}
-        </span>
-      </header>
-      <div
-        ref={scroller}
-        className="sift-scroll mt-4 flex-1 space-y-3 overflow-y-auto px-6 pb-6"
-        aria-live="polite"
-      >
-        {lines.length === 0 ? (
-          <p className="rounded-3xl bg-slate-50 px-5 py-8 text-center text-slate-500">
-            The conversation will appear here, one line at a time.
-          </p>
-        ) : (
-          <AnimatePresence initial={false}>
-            {lines.map((line) => {
-              const risky = line.role === "caller" && hasRisk(line.text);
-              return (
-                <motion.article
-                  key={line.id}
-                  initial={{ opacity: 0, y: 18 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ type: "spring", stiffness: 380, damping: 28 }}
-                  className={`max-w-[95%] rounded-3xl px-4 py-3 ${
-                    line.role === "agent"
-                      ? "bg-slate-50"
-                      : risky
-                        ? "ml-auto border border-rose-200 bg-rose-50"
-                        : "ml-auto border border-slate-200 bg-white"
-                  }`}
-                >
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                    {line.role === "agent" ? "Sift" : "Caller"}
-                  </p>
-                  <p className="mt-1 text-[15px] leading-relaxed text-slate-800">
-                    {highlight(line.text).map((part) =>
-                      part.risky ? (
-                        <mark
-                          key={part.key}
-                          className="rounded-md bg-rose-100 px-1 text-rose-700"
-                        >
-                          {part.text}
-                        </mark>
-                      ) : (
-                        <span key={part.key}>{part.text}</span>
-                      ),
-                    )}
-                  </p>
-                </motion.article>
-              );
-            })}
-          </AnimatePresence>
-        )}
+        <div
+          ref={scroller}
+          className="sift-scroll mt-4 flex-1 space-y-3 overflow-y-auto pr-1"
+          aria-live="polite"
+        >
+          {lines.length === 0 ? (
+            <p className="rounded-box bg-base-200/70 px-5 py-10 text-center text-base-content/65">
+              The conversation will appear here, one line at a time.
+            </p>
+          ) : (
+            <AnimatePresence initial={false}>
+              {lines.map((line) => {
+                const risky = line.role === "caller" && hasRisk(line.text);
+                return (
+                  <motion.article
+                    key={line.id}
+                    initial={{ opacity: 0, y: 18 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ type: "spring", stiffness: 380, damping: 28 }}
+                    className={`chat ${line.role === "agent" ? "chat-start" : "chat-end"} max-w-[95%]`}
+                  >
+                    <div className="chat-header text-xs font-bold uppercase tracking-wide opacity-70">
+                      {line.role === "agent" ? "Sift" : "Caller"}
+                    </div>
+                    <div
+                      className={`chat-bubble text-base leading-relaxed ${
+                        line.role === "agent"
+                          ? "chat-bubble-secondary"
+                          : risky
+                            ? "chat-bubble-error"
+                            : "chat-bubble-primary"
+                      }`}
+                    >
+                      {highlight(line.text).map((part) =>
+                        part.risky ? (
+                          <mark key={part.key} className="rounded-md bg-error/20 font-semibold text-error">
+                            {part.text}
+                          </mark>
+                        ) : (
+                          <span key={part.key}>{part.text}</span>
+                        ),
+                      )}
+                    </div>
+                  </motion.article>
+                );
+              })}
+            </AnimatePresence>
+          )}
+        </div>
       </div>
     </section>
   );

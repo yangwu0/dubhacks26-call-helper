@@ -5,6 +5,8 @@ export interface MessagingProvider {
   send(to: string, body: string): Promise<void>;
 }
 
+// TODO(photon): WS3 implements this with spectrum-ts.
+// Docs: https://photon.codes/docs/spectrum-ts/introduction
 function withPeriod(text: string): string {
   const trimmed = text.replace(/\s+/g, " ").trim();
   if (!trimmed) return trimmed;
@@ -67,9 +69,8 @@ export async function sendLiveRiskAlert(input: {
 
 export function getMessagingProvider(): MessagingProvider {
   const provider = process.env.MESSAGING_PROVIDER ?? "photon";
-  if (provider === "sms") return new TwilioSmsMessaging();
   if (provider === "photon") return new PhotonMessaging();
   throw new Error(
-    `Unknown MESSAGING_PROVIDER "${provider}". Expected photon or sms.`,
+    `Unknown MESSAGING_PROVIDER "${provider}". Sift uses photon only (Twilio SMS removed).`,
   );
 }

@@ -1,3 +1,5 @@
+import { photonVoice } from "@/lib/voice-photon";
+import {
 import { getMessagingProvider } from "@/lib/messaging";
 import { getTwilioClient } from "@/lib/twilio";
 import { photonVoice } from "@/lib/voice-photon";
@@ -71,6 +73,11 @@ export async function startForward(input: {
     owner_phone: input.ownerPhone,
   });
 
+  await photonVoice.forwardCall({
+    callId: input.call.call_sid || input.call.conversation_id || input.call.id,
+    ownerPhone: input.ownerPhone,
+    whisperText: text,
+  });
   if ((process.env.VOICE_PROVIDER ?? "photon") !== "twilio") {
     await photonVoice.forwardCall({
       callId: input.call.call_sid || input.call.conversation_id || input.call.id,

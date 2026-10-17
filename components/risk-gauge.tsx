@@ -4,8 +4,8 @@ import { motion, useMotionValueEvent, useSpring, useTransform } from "framer-mot
 import { useEffect, useState } from "react";
 import { clampScore, RISK_LABEL, RISK_STROKE, riskTone } from "@/components/risk-tone";
 
-const SIZE = 280;
-const STROKE = 18;
+const SIZE = 232;
+const STROKE = 14;
 const RADIUS = (SIZE - STROKE) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
@@ -44,7 +44,7 @@ export function RiskGauge({ score }: { score: number }) {
           cy={SIZE / 2}
           r={RADIUS}
           fill="none"
-          stroke="#e2e8f0"
+          stroke="var(--color-base-300)"
           strokeWidth={STROKE}
         />
         <motion.circle
@@ -62,10 +62,8 @@ export function RiskGauge({ score }: { score: number }) {
         />
       </svg>
       <div className="absolute text-center">
-        <div className="font-display text-7xl font-extrabold leading-none tracking-tight text-slate-800">
-          {shown}
-        </div>
-        <div className="mt-2 text-sm font-semibold" style={{ color }}>
+        <div className="font-display text-6xl font-bold leading-none text-base-content">{shown}</div>
+        <div className="mt-1 text-xs font-semibold" style={{ color }}>
           {RISK_LABEL[tone]}
         </div>
       </div>
