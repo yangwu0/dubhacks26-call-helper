@@ -138,6 +138,114 @@ async function buildSummary(
   return callSummarySchema.parse(clipped);
 }
 
+const imageMediaTypes = [
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+] as const;
+
+export type ScanImageType = (typeof imageMediaTypes)[number];
+
+export const scanResultSchema = z.object({
+  verdict: z.enum(["safe", "suspicious", "scam"]),
+  reasons: z.array(z.string()),
+  plain_english_explanation: z.string().min(1),
+  recommended_steps: z.array(z.string()),
+  possible_errors: z.array(z.string()),
+  questions_to_ask_provider: z.array(z.string()),
+  ways_to_pay_less: z.array(z.string()),
+});
+
+export type ScanResult = z.infer<typeof scanResultSchema>;
+
+const SCAN_SYSTEM = `You are Sift. The owner forwarded a message, email, or photo of a bill. Judge only what is in the content.
+
+Rules:
+- Never invent amounts, dates, account numbers, or errors that are not visible.
+- If the content is missing or unreadable, verdict is suspicious, and the explanation says what you could not read.
+- verdict is safe, suspicious, or scam.
+- reasons are short facts from the content.
+- plain_english_explanation is 2 to 4 sentences a non-expert can follow.
+- recommended_steps are concrete next moves.
+- possible_errors, questions_to_ask_provider, and ways_to_pay_less are for a medical bill or a lease only. For anything else, return empty arrays.`;
+
+export function formatScanReply(result: ScanResult): string {
+  const lines = [
+    `${result.verdict}: ${result.plain_english_explanation}`,
+    result.reasons.length ? `Why: ${result.reasons.join("; ")}` : "",
+    result.recommended_steps.length
+      ? `Next: ${result.recommended_steps.join(" ")}`
+      : "",
+    result.possible_errors.length
+      ? `Possible errors: ${result.possible_errors.join("; ")}`
+      : "",
+    result.questions_to_ask_provider.length
+      ? `Ask them: ${result.questions_to_ask_provider.join(" ")}`
+      : "",
+    result.ways_to_pay_less.length
+      ? `Ways to pay less: ${result.ways_to_pay_less.join(" ")}`
+      : "",
+  ];
+  return lines.filter(Boolean).join("\n");
+}
+
+export function isForwardedText(text: string): boolean {
+  return /begin forwarded message|^fwd:|forwarded message/i.test(text.trim());
+}
+
+export async function scanContent(input: {
+  text?: string;
+  imageUrl?: string;
+  imageBase64?: string;
+  mediaType?: ScanImageType;
+}): Promise<ScanResult> {
+  const text = input.text?.trim() ?? "";
+  const imageUrl = input.imageUrl?.trim() ?? "";
+  const imageBase64 = input.imageBase64?.trim() ?? "";
+  if (!text && !imageUrl && !imageBase64) {
+    throw new Error("Nothing to scan");
+  }
+
+  const content: Array<
+    | { type: "text"; text: string }
+    | {
+        type: "image";
+        source:
+          | { type: "url"; url: string }
+          | { type: "base64"; media_type: ScanImageType; data: string };
+      }
+  > = [];
+  if (imageUrl) {
+    content.push({ type: "image", source: { type: "url", url: imageUrl } });
+  }
+  if (imageBase64) {
+    const mediaType = input.mediaType;
+    if (!mediaType || !imageMediaTypes.includes(mediaType)) {
+      throw new Error("image media type must be jpeg, png, gif, or webp");
+    }
+    content.push({
+      type: "image",
+      source: { type: "base64", media_type: mediaType, data: imageBase64 },
+    });
+  }
+  content.push({
+    type: "text",
+    text: text || "The owner sent this image. Say if it is a bill.",
+  });
+
+  const client = getAnthropicClient();
+  const message = await client.messages.parse({
+    model: modelName(),
+    max_tokens: 1024,
+    system: SCAN_SYSTEM,
+    messages: [{ role: "user", content }],
+    output_config: { format: zodOutputFormat(scanResultSchema) },
+  });
+  if (!message.parsed_output) throw new Error("Claude returned no scan");
+  return scanResultSchema.parse(message.parsed_output);
+}
+
 const weeklyParagraphSchema = z.object({
   paragraph: z.string().min(1),
 });

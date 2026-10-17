@@ -9,6 +9,12 @@ import {
 } from "spectrum-ts";
 import { imessage } from "spectrum-ts/providers/imessage";
 import { serviceClient } from "@/app/api/tools/db";
+import {
+  formatScanReply,
+  isForwardedText,
+  scanContent,
+  type ScanImageType,
+} from "@/lib/anthropic";
 import { parseCommand } from "@/lib/commands";
 
 // Stable Spectrum (spectrum-ts 12.11.0). Project ids that start with pho_prj_
@@ -144,6 +150,10 @@ export async function handleInboundMessage(
 
   if (content.type === "text") {
     await logMessage("in", address, content.text);
+    if (isForwardedText(content.text)) {
+      await reply(await scanOrExplain(() => scanContent({ text: content.text })));
+      return;
+    }
     const result = await parseCommand(content.text, { reply });
     if (result.ok) await message.react(Emoji.like);
     return;
@@ -173,7 +183,39 @@ export async function handleInboundMessage(
       `attachment:${content.name}:${content.mimeType}`,
     );
     await reply(
-      "I got an attachment. Text me what it says if you want a verdict.",
+      await scanAttachment(content.mimeType, content.name, () => content.read()),
     );
   }
+}
+
+async function scanOrExplain(
+  run: () => ReturnType<typeof scanContent>,
+): Promise<string> {
+  try {
+    return formatScanReply(await run());
+  } catch (error) {
+    return error instanceof Error ? error.message : "Scan failed";
+  }
+}
+
+const SCAN_IMAGES = ["image/jpeg", "image/png", "image/gif", "image/webp"] as const;
+
+async function scanAttachment(
+  mimeType: string,
+  name: string,
+  read: () => Promise<Buffer>,
+): Promise<string> {
+  const bytes = await read();
+  if (mimeType.startsWith("text/") || mimeType === "application/json") {
+    return scanOrExplain(() => scanContent({ text: bytes.toString("utf8") }));
+  }
+  if ((SCAN_IMAGES as readonly string[]).includes(mimeType)) {
+    return scanOrExplain(() =>
+      scanContent({
+        imageBase64: bytes.toString("base64"),
+        mediaType: mimeType as ScanImageType,
+      }),
+    );
+  }
+  return `I can't scan ${name || mimeType}. Paste the text instead.`;
 }
