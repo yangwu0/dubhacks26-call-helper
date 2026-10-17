@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { MotionConfig } from "framer-motion";
 import { Suspense, type ReactNode } from "react";
 import { SiftLogo } from "@/components/sift-logo";
+import { getOptionalBrowserClient } from "@/components/supabase-browser";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const LINKS = [
@@ -49,6 +50,25 @@ function ActiveNav() {
   return <NavTabs pathname={pathname} />;
 }
 
+function SignOut() {
+  const router = useRouter();
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        const supabase = getOptionalBrowserClient();
+        void supabase?.auth.signOut().finally(() => {
+          router.replace("/");
+        });
+      }}
+      className="btn btn-ghost btn-sm h-10 w-auto rounded-xl text-sm font-semibold"
+    >
+      Sign out
+    </button>
+  );
+}
+
 export function DashboardShell({ children }: { children: ReactNode }) {
   return (
     <MotionConfig reducedMotion="user">
@@ -66,9 +86,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
             </div>
             <div className="navbar-end gap-2">
               <ThemeToggle />
-              <Link href="/" className="btn btn-ghost btn-sm text-sm font-semibold h-10 w-auto rounded-xl">
-                Sign out
-              </Link>
+              <SignOut />
             </div>
           </div>
           <div className="flex justify-center overflow-x-auto pb-0.5 sm:justify-start">

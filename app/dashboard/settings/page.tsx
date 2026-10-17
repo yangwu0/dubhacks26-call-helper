@@ -16,7 +16,7 @@ import {
 } from "@/components/styles";
 
 export default function SettingsPage() {
-  const { owner, blocked, usingSample, saveOwner, addBlocked, removeBlocked } = useSiftDirectory();
+  const { owner, blocked, saveOwner, addBlocked, removeBlocked } = useSiftDirectory();
   const [name, setName] = useState(owner.name);
   const [aliases, setAliases] = useState(owner.aliases);
   const [phone, setPhone] = useState(owner.phone);
@@ -73,7 +73,7 @@ export default function SettingsPage() {
       <p className={pageEyebrow}>Your line</p>
       <h1 className={pageTitle}>Settings</h1>
       <p className={pageSubtitle}>
-        {usingSample ? "Sample profile, until the directory connects." : "Connected to your directory."}
+        Connected to your account. Changes here are saved in Supabase.
       </p>
 
       <div className="mt-6 grid gap-5 xl:grid-cols-2">

@@ -2,7 +2,6 @@
 
 import { ActionBadge, badgeForCall } from "@/components/action-badge";
 import { CallStrip } from "@/components/call-strip";
-import { DemoToggle } from "@/components/demo-toggle";
 import { formatPhone } from "@/components/format";
 import { LiveTranscript } from "@/components/live-transcript";
 import { RiskGauge } from "@/components/risk-gauge";
@@ -16,7 +15,6 @@ import {
   riskPill,
   sectionTitle,
 } from "@/components/styles";
-import { useDemoPlayback } from "@/components/use-demo-playback";
 import type { RoutingStatus, TranscriptLine } from "@/lib/mockCallData";
 
 function NameCheck({ match }: { match: boolean | null }) {
@@ -32,49 +30,38 @@ function NameCheck({ match }: { match: boolean | null }) {
 }
 
 export default function LivePage() {
-  const demo = useDemoPlayback();
   const { calls } = useSiftDirectory();
   const live = calls.find((call) => call.status === "in_progress") ?? null;
-  const showingDemo = demo.engaged;
-  const showingLive = !showingDemo && live !== null;
+  const showingLive = live !== null;
 
-  const score = showingDemo ? demo.score : live?.riskScore ?? 0;
-  const reasons = showingDemo ? demo.reasons : live?.riskReasons ?? [];
-  const status: RoutingStatus = showingDemo
-    ? demo.action
-    : live
-      ? badgeForCall(live)
-      : "waiting";
-  const lines: TranscriptLine[] = showingDemo ? demo.lines : live?.transcript ?? [];
-  const callerName = showingDemo
-    ? demo.callerName
-    : live?.callerName ?? "No call right now";
-  const callerNumber = showingDemo ? demo.callerNumber : live?.callerNumber ?? "";
-  const claimedTarget = showingDemo ? demo.claimedTarget : live?.claimedTarget ?? "";
-  const targetMatch = showingDemo ? demo.targetMatch : live?.targetMatch ?? null;
-  const intent = showingDemo ? "" : live?.callerIntent ?? "";
+  const score = live?.riskScore ?? 0;
+  const reasons = live?.riskReasons ?? [];
+  const status: RoutingStatus = live ? badgeForCall(live) : "waiting";
+  const lines: TranscriptLine[] = live?.transcript ?? [];
+  const callerName = live?.callerName ?? "No call right now";
+  const callerNumber = live?.callerNumber ?? "";
+  const claimedTarget = live?.claimedTarget ?? "";
+  const targetMatch = live?.targetMatch ?? null;
+  const intent = live?.callerIntent ?? "";
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className={pageEyebrow}>Right now</p>
-          <h1 className={pageTitle}>Live</h1>
-        </div>
-        <DemoToggle running={demo.running} onToggle={demo.toggle} />
+      <div>
+        <p className={pageEyebrow}>Right now</p>
+        <h1 className={pageTitle}>Live</h1>
       </div>
 
       <div className="grid items-stretch gap-5 lg:grid-cols-2">
         <section className={`${cardClass} bg-base-100`}>
           <div className="card-body items-center text-center">
             <p className={labelCaps}>
-              {showingDemo || showingLive ? "Incoming" : "All quiet"}
+              {showingLive ? "Incoming" : "All quiet"}
             </p>
             <h2 className={sectionTitle}>{callerName}</h2>
             <p className={bodyMuted}>
               {callerNumber ? formatPhone(callerNumber) : "Sift will pick up when someone calls."}
             </p>
-            {(showingDemo || showingLive) && (
+            {showingLive && (
               <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
                 <NameCheck match={targetMatch} />
                 {claimedTarget ? (

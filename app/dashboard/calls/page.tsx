@@ -15,15 +15,13 @@ import {
 } from "@/components/styles";
 
 export default function CallsPage() {
-  const { calls, usingSample } = useSiftDirectory();
+  const { calls } = useSiftDirectory();
 
   return (
     <div>
       <p className={pageEyebrow}>The log</p>
       <h1 className={pageTitle}>Calls</h1>
-      <p className={pageSubtitle}>
-        {usingSample ? "Sample calls, ready for the demo." : "Updating from your line."}
-      </p>
+      <p className={pageSubtitle}>Calls stored for your account.</p>
       <div className={`${cardClass} mt-6`}>
         <div className="card-body p-0">
           <div className="overflow-x-auto">

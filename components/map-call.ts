@@ -95,7 +95,7 @@ export function mapCall(row: Record<string, unknown>, events: EventRow[] = []): 
 export function mapOwner(row: Record<string, unknown>): OwnerProfile {
   return {
     id: text(row.id),
-    name: text(row.name, "Alex Kim"),
+    name: text(row.name),
     aliases: stringList(row.aliases),
     phone: text(row.phone),
   };
