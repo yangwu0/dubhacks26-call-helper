@@ -76,6 +76,12 @@ function clampScore(value: number | null | undefined): number {
   return Math.min(100, Math.max(0, Math.round(value)));
 }
 
+function sentenceCount(text: string): number {
+  return (text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) ?? [])
+    .map((part) => part.trim())
+    .filter(Boolean).length;
+}
+
 function clipSentences(text: string, max: number): string {
   const parts = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) ?? [text];
   return parts
@@ -130,6 +136,40 @@ async function buildSummary(
     risk_score: clampScore(message.parsed_output.risk_score),
   };
   return callSummarySchema.parse(clipped);
+}
+
+const weeklyParagraphSchema = z.object({
+  paragraph: z.string().min(1),
+});
+
+// Three upbeat sentences. The caller checks that the computed insight is present.
+export async function writeWeeklyParagraph(facts: {
+  calls_handled: number;
+  scams_blocked: number;
+  meetings_booked: number;
+  important_forwarded: number;
+  minutes_saved: number;
+  plan_vs_done: { planned: number; done: number; share: number };
+  insight: string;
+}): Promise<string> {
+  const client = getAnthropicClient();
+  const message = await client.messages.parse({
+    model: modelName(),
+    max_tokens: 400,
+    system:
+      "You write the owner's weekly Sift note. Exactly 3 upbeat sentences. Use only the numbers and the insight in the user message. Include the insight once, unchanged. Do not invent busiest hours, callers, or dollar amounts.",
+    messages: [{ role: "user", content: JSON.stringify(facts) }],
+    output_config: { format: zodOutputFormat(weeklyParagraphSchema) },
+  });
+  const paragraph = message.parsed_output?.paragraph?.trim();
+  if (!paragraph) throw new Error("Claude returned no weekly paragraph");
+  if (sentenceCount(paragraph) !== 3) {
+    throw new Error("Weekly paragraph was not 3 sentences");
+  }
+  if (!paragraph.includes(facts.insight)) {
+    throw new Error("Weekly paragraph dropped the computed insight");
+  }
+  return paragraph;
 }
 
 // One argument keeps the string the post-call route already stores and texts.

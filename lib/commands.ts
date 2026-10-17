@@ -6,7 +6,7 @@ import {
   normalizePhone,
   serviceClient,
 } from "@/app/api/tools/db";
-import { getAnthropicClient } from "@/lib/anthropic";
+import { getAnthropicClient, writeWeeklyParagraph } from "@/lib/anthropic";
 import { getVoiceProvider } from "@/lib/voice";
 
 const COMMANDS = ["CALL", "BLOCK", "UNBLOCK", "ADD", "UNDO", "REPORT"] as const;
@@ -350,6 +350,30 @@ export function formatWeeklyStats(stats: WeeklyStats): string {
   ].join(" ");
 }
 
+export type WeeklyReport = WeeklyStats & {
+  paragraph: string;
+  text: string;
+};
+
+export async function createWeeklyReport(
+  supabase?: SupabaseClient,
+): Promise<WeeklyReport> {
+  const client = supabase ?? serviceClient();
+  const stats = await collectWeeklyStats(client);
+  let paragraph: string;
+  try {
+    paragraph = await writeWeeklyParagraph(stats);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : "summary failed";
+    paragraph = `A written summary is unavailable (${reason}). ${stats.insight}`;
+  }
+  return {
+    ...stats,
+    paragraph,
+    text: `${paragraph} ${formatWeeklyStats(stats)}`,
+  };
+}
+
 async function answerQuestion(
   supabase: SupabaseClient,
   question: string,
@@ -410,8 +434,8 @@ async function dispatch(text: string, ctx: CommandContext): Promise<CommandResul
     return { command, ok: true };
   }
   if (command === "REPORT") {
-    const stats = await collectWeeklyStats(supabase);
-    await ctx.reply(formatWeeklyStats(stats));
+    const report = await createWeeklyReport(supabase);
+    await ctx.reply(report.text);
     return { command, ok: true };
   }
 
