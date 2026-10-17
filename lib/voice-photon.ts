@@ -1,7 +1,12 @@
-import type { VoiceProvider } from "./voice";
+import type { VoiceProvider } from "@/lib/voice";
 
-// TODO(photon): SIP voice once Photon voice credentials exist.
-// Docs: https://photon.codes/docs/spectrum-ts/introduction
+// TODO(photon): no Photon voice credentials are configured.
+// Implement this from the Stable Spectrum voice docs once a voice line exists:
+// https://photon.codes/docs/spectrum-ts/providers/voice
+// https://photon.codes/docs/spectrum-ts/providers/voice/inbound-calls
+// https://photon.codes/docs/spectrum-ts/providers/voice/outbound-calls
+// Target: the Photon iMessage line receives the call and SIP-routes it to the
+// ElevenLabs agent. Do not invent SDK method names before that implementation.
 export const photonVoice: VoiceProvider = {
   async forwardCall(input) {
     throw new Error(
