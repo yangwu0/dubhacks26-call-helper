@@ -57,7 +57,9 @@ export async function POST(req: Request) {
       reason,
       urgency,
     });
-    after(() => waitForOwnerAnswer(result));
+    if (result.ownerCallSid) {
+      after(() => waitForOwnerAnswer(result));
+    }
 
     const message = "Connecting you now.";
     await insertEvent(supabase, call.id, "tool", {
@@ -66,10 +68,17 @@ export async function POST(req: Request) {
       message,
       reason,
       urgency,
-      owner_call_sid: result.ownerCallSid,
-      conference: result.conferenceName,
+      transfer_number: result.transferNumber ?? null,
+      owner_call_sid: result.ownerCallSid || null,
+      conference: result.conferenceName || null,
     });
-    return json({ ok: true, message });
+    return json({
+      ok: true,
+      message,
+      ...(result.transferNumber
+        ? { transfer_number: result.transferNumber }
+        : {}),
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "forward failed";
     console.error("forward_call", message);

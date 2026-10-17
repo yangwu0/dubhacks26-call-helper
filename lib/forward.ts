@@ -28,6 +28,7 @@ export type ForwardResult = {
   ownerCallSid: string;
   conferenceName: string;
   parentCallSid: string;
+  transferNumber?: string;
 };
 
 function appBase(): string {
@@ -55,9 +56,6 @@ export async function startForward(input: {
   reason: string;
   urgency: string;
 }): Promise<ForwardResult> {
-  const parentCallSid = input.call.call_sid;
-  if (!parentCallSid) throw new Error("This call has no Twilio call SID");
-
   const text = whisperText({
     callerName: input.call.caller_name,
     callerNumber: input.call.caller_number,
@@ -73,14 +71,32 @@ export async function startForward(input: {
     owner_phone: input.ownerPhone,
   });
 
-  if ((process.env.VOICE_PROVIDER ?? "twilio") === "photon") {
+  if ((process.env.VOICE_PROVIDER ?? "photon") !== "twilio") {
     await photonVoice.forwardCall({
-      callId: parentCallSid,
+      callId: input.call.call_sid || input.call.conversation_id || input.call.id,
       ownerPhone: input.ownerPhone,
       whisperText: text,
     });
-    throw new Error("TODO(photon): forward returned without a call SID");
+    const { error } = await supabase
+      .from("calls")
+      .update({ action: "forwarded" })
+      .eq("id", input.call.id);
+    if (error) throw new Error(error.message);
+    await insertEvent(supabase, input.call.id, "action", {
+      step: "photon_transfer",
+      transfer_number: input.ownerPhone,
+      whisper: text,
+    });
+    return {
+      ownerCallSid: "",
+      conferenceName: "",
+      parentCallSid: input.call.call_sid || "",
+      transferNumber: input.ownerPhone,
+    };
   }
+
+  const parentCallSid = input.call.call_sid;
+  if (!parentCallSid) throw new Error("This call has no Twilio call SID");
 
   const statusCallbackUrl = `${appBase()}/api/twilio/owner-status?call_sid=${encodeURIComponent(parentCallSid)}`;
   const bridged = await bridgeTwilioConference({

@@ -31,7 +31,7 @@ Otherwise follow this order:
 3. After each meaningful thing the caller says, call report_risk with an integer score from 0 to 100, short reasons, caller_intent, and caller_name once you know it. Raise the score for government impersonation, arrest threats, gift cards, cryptocurrency, wire or payment demands, remote-access software, refusal to name a person, pressure to act immediately, or a name that does not match. Lower the score by 20 or more only when you have a concrete reason, and put that reason in reasons.
 4. Obey recommended_action:
    - end_as_scam: stay calm. Ask one to three short questions so the owner has a record. Agree to nothing. Do not transfer, pay, or install anything. Then end the call.
-   - may_forward: only for a real scheduling, medical, school, landlord, or delivery matter, and only after verify_caller_target returned match true. Call forward_call with the reason and urgency. If it returns ok false, take a message instead.
+   - may_forward: only for a real scheduling, medical, school, landlord, or delivery matter, and only after verify_caller_target returned match true. Call forward_call with the reason and urgency. If it returns ok true and a transfer_number, immediately call the transfer_to_number tool with that number, client_message "Connecting you now.", and do not read the phone number aloud. If forward_call returns ok false, or the transfer does not connect, take a message instead.
    - continue: if they want to schedule something, call check_availability, offer two of the returned free windows, and call book_event only after they accept one. For anything routine, call take_message.
 
 Do not call forward_call unless the latest report_risk response is may_forward. Do not invent free times. If book_event returns ok false, that slot is taken or outside weekday hours from 9am to 6pm, so offer another returned window.
@@ -51,17 +51,21 @@ Define these on the agent. The conversation-initiation webhook returns all of th
 
 Do not create custom variables with the `system__` prefix. Pass `system__conversation_id` into every tool as `conversation_id` (value type: Dynamic variable).
 
+## Phone number
+
+Use a Photon number, not Twilio. In the Photon Voice profile, point inbound calls at `sips:sip.rtc.elevenlabs.io:5061` with TLS. Import that number into ElevenLabs with From SIP Trunk, using the Photon outbound SIP username, password, and address (for example `sip.photon.codes:5061`, transport TLS). Assign this agent to the imported number.
+
+Stable Spectrum docs say `spectrum-ts` cannot place or join calls yet. ElevenLabs is the SIP application.
+
 ## Conversation initiation webhook
 
-ElevenLabs docs: Twilio personalization. Enable "fetch conversation initiation data" for inbound Twilio calls.
+The same webhook runs for inbound SIP trunk calls. Enable "Fetch initiation client data from a webhook" on the agent Security tab.
 
 - Method: POST
 - URL: `https://YOUR_APP/api/elevenlabs/init`
 - Header: `x-sift-secret: <SIFT_WEBHOOK_SECRET>`
-- Body ElevenLabs sends: `caller_id`, `agent_id`, `called_number`, `call_sid`, `conversation_id`
+- Body ElevenLabs sends: `caller_id`, `agent_id`, `called_number`, `conversation_id`, and `call_sid` or `call_id` when the provider includes one
 - Response: `type: conversation_initiation_client_data` and `dynamic_variables` for the five variables above
-
-The webhook must answer in under a second.
 
 ## Post-call webhook
 
@@ -125,9 +129,9 @@ Description: Ring the owner and join them to this call. Use only when recommende
 | reason | string | Why the owner is being connected, in a few words the owner can hear. |
 | urgency | string | How time-sensitive this is, such as today or this week. |
 
-Response: `{ "ok": boolean, "message": string }`. Say `message` to the caller. `ok: false` means the server refused or the bridge failed. Take a message instead.
+Response: `{ "ok": boolean, "message": string, "transfer_number"?: string }`. Say `message` to the caller. When `transfer_number` is present, call `transfer_to_number` with that exact number. Do not speak the number. `ok: false` means the server refused. Take a message instead.
 
-The server refuses unless `target_match` is true and `risk_score` is under 40. On success it plays "Connecting you now.", dials the owner with a whisper, and joins both to conference `sift-<call SID>`. If the owner does not answer within 20 seconds, the caller is told a message will be passed on and the owner is texted.
+The server refuses unless `target_match` is true and `risk_score` is under 40. The handoff is an ElevenLabs conference transfer over the Photon SIP trunk. SIP transfers do not play a separate whisper to the owner.
 
 ### check_availability
 
@@ -174,6 +178,8 @@ Description: Save a message and text the owner. Use this for routine calls and w
 
 Response: `{ "ok": true }`.
 
-## System tool
+## System tools
 
-Enable the built-in End call tool. Use it after `end_as_scam`, after a message is taken, and after a booking is confirmed. Do not use it in the same turn you call `forward_call`.
+Enable End call. Use it after `end_as_scam`, after a message is taken, and after a booking is confirmed.
+
+Enable Transfer to number. Add one conference-transfer rule whose phone number is the owner's E.164 phone. Condition: "forward_call returned ok true". The agent must pass `transfer_number` from that tool response. `client_message` is "Connecting you now."

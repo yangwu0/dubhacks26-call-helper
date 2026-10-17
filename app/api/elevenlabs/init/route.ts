@@ -10,8 +10,8 @@ import {
   serviceClient,
 } from "@/app/api/tools/db";
 
-// Twilio personalization webhook.
-// https://elevenlabs.io/docs/eleven-agents/customization/personalization/twilio-personalization
+// Conversation initiation webhook. Runs for Photon SIP trunk calls and Twilio.
+// https://elevenlabs.io/docs/eleven-agents/customization/personalization
 export async function POST(req: Request) {
   const unauthorized = rejectIfUnauthorized(req);
   if (unauthorized) return unauthorized;
@@ -28,7 +28,8 @@ export async function POST(req: Request) {
     return json({ error: "invalid body" }, 400);
   }
 
-  const { caller_id, called_number, call_sid, conversation_id } = parsed.data;
+  const { caller_id, called_number, conversation_id } = parsed.data;
+  const callSid = parsed.data.call_sid || parsed.data.call_id || "";
   const callerNumber = normalizePhone(caller_id);
 
   try {
@@ -45,7 +46,7 @@ export async function POST(req: Request) {
         {
           owner_id: owner.id,
           conversation_id,
-          call_sid,
+          call_sid: callSid,
           caller_number: callerNumber,
         },
         { onConflict: "conversation_id" },
@@ -58,7 +59,7 @@ export async function POST(req: Request) {
       step: "init",
       caller_number: callerNumber,
       called_number,
-      call_sid,
+      call_sid: callSid,
       is_blocked: blocked,
       is_known_contact: known,
     });
@@ -70,7 +71,7 @@ export async function POST(req: Request) {
         caller_number: callerNumber,
         is_blocked: blocked,
         is_known_contact: known,
-        call_sid,
+        call_sid: callSid,
       },
     });
   } catch (error) {

@@ -29,7 +29,7 @@ export interface VoiceProvider {
 }
 
 export function getVoiceProvider(): VoiceProvider {
-  const provider = process.env.VOICE_PROVIDER ?? "twilio";
+  const provider = process.env.VOICE_PROVIDER ?? "photon";
   if (provider === "photon") return photonVoice;
   if (provider === "twilio") return twilioVoice;
   throw new Error(

@@ -258,7 +258,7 @@ async function main() {
     urgency: "tomorrow",
   });
   console.log(
-    `info forward HTTP ${forwarded.status} ${forwarded.raw} (Twilio credentials are required for ok true)`,
+    `info forward HTTP ${forwarded.status} ${forwarded.raw}`,
   );
 
   const postBody = {
