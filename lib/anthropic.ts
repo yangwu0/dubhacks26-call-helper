@@ -1,4 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+import * as z from "zod";
 
 export function getAnthropicClient() {
   return new Anthropic({
@@ -6,13 +8,142 @@ export function getAnthropicClient() {
   });
 }
 
-// Stub. The post-call workspace replaces this with a real summary.
-export async function summarize(transcript: string): Promise<string> {
-  const model = process.env.ANTHROPIC_MODEL;
-  if (!model) {
-    throw new Error("ANTHROPIC_MODEL is required");
+export const callSummarySchema = z.object({
+  classification: z.enum([
+    "scam",
+    "legit_important",
+    "legit_routine",
+    "unknown",
+  ]),
+  risk_score: z.number().int().min(0).max(100),
+  scam_type: z.string().nullable(),
+  summary: z.string().min(1),
+  key_details: z.array(z.string()),
+  suggested_action: z.enum([
+    "block",
+    "forward",
+    "book",
+    "take_message",
+    "none",
+  ]),
+});
+
+export type CallSummary = z.infer<typeof callSummarySchema>;
+
+export type CallMeta = {
+  caller_name?: string | null;
+  caller_number?: string | null;
+  caller_intent?: string | null;
+  risk_score?: number | null;
+  risk_reasons?: string[] | null;
+  action?: string | null;
+  target_match?: boolean | null;
+};
+
+const SUMMARY_SYSTEM = `You are Sift, a friendly phone assistant. Summarize one phone call for the owner.
+
+Rules:
+- Use only facts that appear in the transcript or the call metadata. Never invent names, dollar amounts, dates, threats, or outcomes.
+- summary is at most two short sentences.
+- classification is scam, legit_important, legit_routine, or unknown.
+- risk_score is an integer from 0 to 100. Gift cards, arrest threats, and secrecy score high. A real office, school, landlord, or delivery scores low.
+- scam_type is a short label such as "irs" or "warranty", or null when this is not a scam.
+- key_details lists concrete facts from the call. Use an empty list when you have none.
+- suggested_action is block, forward, book, take_message, or none.
+
+These three examples are samples of the output shape. They are not the call you are summarizing.
+
+Example 1, IRS scam.
+Transcript: The caller says they are the IRS, that Alex owes taxes, and that Alex must pay with gift cards today or be arrested.
+{"classification":"scam","risk_score":94,"scam_type":"irs","summary":"A caller pretended to be the IRS and demanded gift cards to avoid arrest.","key_details":["Claimed to be the IRS","Demanded gift cards","Threatened arrest"],"suggested_action":"block"}
+
+Example 2, doctor's office.
+Transcript: Dr. Lee's office asks to move Thursday's appointment and offers Friday at 2pm. The agent books Friday at 2pm.
+{"classification":"legit_important","risk_score":8,"scam_type":null,"summary":"Dr. Lee's office called to move Thursday's appointment. Friday at 2pm is booked.","key_details":["Caller: Dr. Lee's office","New time: Friday 2pm"],"suggested_action":"book"}
+
+Example 3, delivery.
+Transcript: A driver says a package will arrive today between 4 and 6pm. They do not ask for payment.
+{"classification":"legit_routine","risk_score":12,"scam_type":null,"summary":"A delivery driver called to say a package arrives today between 4 and 6pm.","key_details":["Delivery window: today 4-6pm"],"suggested_action":"take_message"}`;
+
+function modelName(): string {
+  const model = process.env.ANTHROPIC_MODEL?.trim();
+  if (!model) throw new Error("ANTHROPIC_MODEL is required");
+  return model;
+}
+
+function clampScore(value: number | null | undefined): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return 0;
+  return Math.min(100, Math.max(0, Math.round(value)));
+}
+
+function clipSentences(text: string, max: number): string {
+  const parts = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) ?? [text];
+  return parts
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .slice(0, max)
+    .join(" ")
+    .trim();
+}
+
+function missingTranscript(callMeta: CallMeta): CallSummary {
+  return callSummarySchema.parse({
+    classification: "unknown",
+    risk_score: clampScore(callMeta.risk_score),
+    scam_type: null,
+    summary: "The transcript is missing, so I can't say what was discussed.",
+    key_details: [],
+    suggested_action: "none",
+  });
+}
+
+async function buildSummary(
+  transcript: string,
+  callMeta: CallMeta,
+): Promise<CallSummary> {
+  const text = transcript.trim();
+  if (!text) return missingTranscript(callMeta);
+
+  const client = getAnthropicClient();
+  const message = await client.messages.parse({
+    model: modelName(),
+    max_tokens: 1024,
+    system: SUMMARY_SYSTEM,
+    messages: [
+      {
+        role: "user",
+        content: `Call metadata:\n${JSON.stringify(callMeta)}\n\nTranscript:\n${text}`,
+      },
+    ],
+    output_config: {
+      format: zodOutputFormat(callSummarySchema),
+    },
+  });
+
+  if (!message.parsed_output) {
+    throw new Error("Claude returned no summary JSON");
   }
-  throw new Error(
-    `TODO: summarize ${transcript.length} characters with ${model} via client.messages.create`,
-  );
+
+  const clipped = {
+    ...message.parsed_output,
+    summary: clipSentences(message.parsed_output.summary, 2),
+    risk_score: clampScore(message.parsed_output.risk_score),
+  };
+  return callSummarySchema.parse(clipped);
+}
+
+// One argument keeps the string the post-call route already stores and texts.
+// Pass callMeta to get the validated JSON object.
+export async function summarize(transcript: string): Promise<string>;
+export async function summarize(
+  transcript: string,
+  callMeta: CallMeta,
+): Promise<CallSummary>;
+export async function summarize(
+  transcript: string,
+  callMeta?: CallMeta,
+): Promise<string | CallSummary> {
+  const structured = await buildSummary(transcript, callMeta ?? {});
+  if (callMeta === undefined) return structured.summary;
+  return structured;
 }
