@@ -9,7 +9,15 @@ import { LiveTranscript } from "@/components/live-transcript";
 import { RiskGauge } from "@/components/risk-gauge";
 import { RISK_STROKE, riskTone } from "@/components/risk-tone";
 import { useSiftDirectory } from "@/components/sift-provider";
-import { bodyMuted, btnDanger, btnSafe, cardClass, cardHeading, pageTitle } from "@/components/styles";
+import {
+  bodyMuted,
+  btnDanger,
+  btnSafe,
+  cardClass,
+  cardHeading,
+  metaMuted,
+  pageTitle,
+} from "@/components/styles";
 import type { RiskPoint } from "@/lib/mockCallData";
 
 function RiskTimeline({ points }: { points: RiskPoint[] }) {
@@ -69,13 +77,13 @@ function CallDetailInner() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/dashboard/calls" className="link link-hover text-base font-semibold">
+        <Link href="/dashboard/calls" className={`link link-hover ${metaMuted} font-semibold`}>
           All calls
         </Link>
         <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className={pageTitle}>{call.callerName}</h1>
-            <p className="mt-1 text-lg text-base-content/70">
+            <p className={`mt-1 ${bodyMuted}`}>
               {formatPhone(call.callerNumber)} · {formatWhen(call.startedAt)}
             </p>
           </div>
@@ -100,7 +108,7 @@ function CallDetailInner() {
                     : "No summary for this call yet.")}
               </p>
               {call.classification !== "scam" && call.callerIntent && call.summary !== call.callerIntent ? (
-                <p className="mt-3 text-sm text-base-content/60">
+                <p className={`mt-3 ${metaMuted}`}>
                   Also noted: {call.callerIntent}
                 </p>
               ) : null}
@@ -111,7 +119,7 @@ function CallDetailInner() {
           <section className={cardClass}>
             <div className="card-body items-center">
               <RiskGauge score={call.riskScore} />
-              <p className="text-base text-base-content/70">
+              <p className={bodyMuted}>
                 {call.targetMatch === true
                   ? "Name check: match"
                   : call.targetMatch === false
@@ -139,7 +147,7 @@ function CallDetailInner() {
               <p className={`mt-2 ${bodyMuted}`}>
                 {call.summary || "Sift hasn't written a summary for this call yet."}
               </p>
-              <p className="mt-3 font-bold text-base-content/70">
+              <p className={`mt-3 text-base font-semibold text-base-content/75`}>
                 Action taken: {call.action === "none" ? "Still deciding" : call.action.replace(/_/g, " ")}
               </p>
               <button
@@ -150,7 +158,7 @@ function CallDetailInner() {
               >
                 {isBlocked ? "Unblock number" : "Block number"}
               </button>
-              {note ? <p className="mt-3 text-base text-base-content/65">{note}</p> : null}
+              {note ? <p className={`mt-3 ${metaMuted}`}>{note}</p> : null}
             </div>
           </section>
         </div>

@@ -7,7 +7,15 @@ import { formatPhone } from "@/components/format";
 import { LiveTranscript } from "@/components/live-transcript";
 import { RiskGauge } from "@/components/risk-gauge";
 import { useSiftDirectory } from "@/components/sift-provider";
-import { cardClass, pageEyebrow, pageTitle, riskPill } from "@/components/styles";
+import {
+  bodyMuted,
+  cardClass,
+  labelCaps,
+  pageEyebrow,
+  pageTitle,
+  riskPill,
+  sectionTitle,
+} from "@/components/styles";
 import { useDemoPlayback } from "@/components/use-demo-playback";
 import type { RoutingStatus, TranscriptLine } from "@/lib/mockCallData";
 
@@ -59,11 +67,11 @@ export default function LivePage() {
       <div className="grid items-stretch gap-5 lg:grid-cols-2">
         <section className={`${cardClass} bg-base-100`}>
           <div className="card-body items-center text-center">
-            <p className="text-sm font-bold uppercase tracking-wider text-base-content/60">
+            <p className={labelCaps}>
               {showingDemo || showingLive ? "Incoming" : "All quiet"}
             </p>
-            <h2 className="font-display card-title text-2xl">{callerName}</h2>
-            <p className="text-base text-base-content/70">
+            <h2 className={sectionTitle}>{callerName}</h2>
+            <p className={bodyMuted}>
               {callerNumber ? formatPhone(callerNumber) : "Sift will pick up when someone calls."}
             </p>
             {(showingDemo || showingLive) && (
@@ -74,7 +82,7 @@ export default function LivePage() {
                 ) : null}
               </div>
             )}
-            {intent ? <p className="max-w-sm text-base text-base-content/70">{intent}</p> : null}
+            {intent ? <p className={`max-w-sm ${bodyMuted}`}>{intent}</p> : null}
             <div className="my-4">
               <RiskGauge score={score} />
             </div>

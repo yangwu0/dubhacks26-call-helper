@@ -9,7 +9,9 @@ import {
   cardClass,
   cardHeading,
   inputClass,
+  metaMuted,
   pageEyebrow,
+  pageSubtitle,
   pageTitle,
 } from "@/components/styles";
 
@@ -70,7 +72,7 @@ export default function SettingsPage() {
     <div>
       <p className={pageEyebrow}>Your line</p>
       <h1 className={pageTitle}>Settings</h1>
-      <p className="mt-2 text-lg text-base-content/70">
+      <p className={pageSubtitle}>
         {usingSample ? "Sample profile, until the directory connects." : "Connected to your directory."}
       </p>
 
@@ -144,7 +146,7 @@ export default function SettingsPage() {
             <h2 className={cardHeading}>Blocked numbers</h2>
             <ul className="space-y-3">
               {blocked.length === 0 ? (
-                <li className="text-base-content/65">Nothing is blocked.</li>
+                <li className={metaMuted}>Nothing is blocked.</li>
               ) : (
                 blocked.map((item) => (
                   <li
@@ -153,7 +155,7 @@ export default function SettingsPage() {
                   >
                     <div>
                       <p className="font-semibold">{formatPhone(item.number)}</p>
-                      <p className="text-sm text-base-content/65">{item.reason}</p>
+                      <p className={metaMuted}>{item.reason}</p>
                     </div>
                     <button
                       type="button"
@@ -196,7 +198,7 @@ export default function SettingsPage() {
           </div>
         </section>
       </div>
-      {note ? <p className="mt-4 text-base text-base-content/65">{note}</p> : null}
+      {note ? <p className={`mt-4 ${metaMuted}`}>{note}</p> : null}
     </div>
   );
 }

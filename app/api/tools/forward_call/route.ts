@@ -1,12 +1,6 @@
-import { NextResponse } from "next/server";
-
 import { forwardCallRequestSchema } from "@/lib/contracts";
 import { FORWARD_MAX_SCORE } from "@/lib/scoring";
 import { startForward } from "@/lib/forward";
-import { after } from "next/server";
-import { forwardCallRequestSchema } from "@/lib/contracts";
-import { FORWARD_MAX_SCORE } from "@/lib/scoring";
-import { startForward, waitForOwnerAnswer } from "@/lib/forward";
 import {
   getCallByConversation,
   getOwner,
@@ -62,9 +56,6 @@ export async function POST(req: Request) {
       reason,
       urgency,
     });
-    if (result.ownerCallSid) {
-      after(() => waitForOwnerAnswer(result));
-    }
 
     const message = "Connecting you now.";
     await insertEvent(supabase, call.id, "tool", {
@@ -74,8 +65,6 @@ export async function POST(req: Request) {
       reason,
       urgency,
       transfer_number: result.transferNumber ?? null,
-      owner_call_sid: result.ownerCallSid || null,
-      conference: result.conferenceName || null,
     });
     return json({
       ok: true,

@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef } from "react";
 import type { TranscriptLine } from "@/lib/mockCallData";
-import { cardClass } from "@/components/styles";
+import { bodyMuted, cardClass, cardHeading, pageEyebrow } from "@/components/styles";
 
 const RISKY_SOURCE =
   "gift cards?|arrest(?:ed)?|\\birs\\b|warrant|social security|bitcoin|wire transfer|remote[- ]access";
@@ -46,8 +46,8 @@ export function LiveTranscript({ lines }: { lines: TranscriptLine[] }) {
       <div className="card-body flex min-h-0 flex-1 flex-col pb-2 pt-6">
         <div className="flex shrink-0 items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold text-base-content/60">Conversation</p>
-            <h2 className="font-display text-xl font-bold">Live transcript</h2>
+            <p className={pageEyebrow}>Conversation</p>
+            <h2 className={cardHeading}>Live transcript</h2>
           </div>
           <span className="badge badge-neutral badge-soft font-bold">
             {lines.length === 0 ? "Waiting" : `${lines.length} lines`}
@@ -59,7 +59,7 @@ export function LiveTranscript({ lines }: { lines: TranscriptLine[] }) {
           aria-live="polite"
         >
           {lines.length === 0 ? (
-            <p className="rounded-box bg-base-200/70 px-5 py-10 text-center text-base-content/65">
+            <p className={`rounded-box bg-base-200/70 px-5 py-10 text-center ${bodyMuted}`}>
               The conversation will appear here, one line at a time.
             </p>
           ) : (
