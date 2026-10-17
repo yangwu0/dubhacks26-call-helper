@@ -37,14 +37,32 @@ export class TwilioSmsMessaging implements MessagingProvider {
   }
 }
 
-// TODO(photon): WS3 implements this with spectrum-ts.
-// Docs: https://photon.codes/docs/spectrum-ts/introduction
+// Stable Spectrum docs: https://photon.codes/docs/spectrum-ts/spaces-and-users
 export class PhotonMessaging implements MessagingProvider {
   async send(to: string, body: string): Promise<void> {
-    throw new Error(
-      `TODO(photon): WS3 send via spectrum-ts to ${to} (${body.length} chars)`,
-    );
+    const { sendIMessage } = await import("./photon");
+    await sendIMessage(to, body);
   }
+}
+
+// Live alert while a call is still going. report_risk should call this.
+// Photon sends the text plus a Block/Allow poll. A voice note is added when
+// ELEVENLABS_VOICE_ID is set.
+export async function sendLiveRiskAlert(input: {
+  to: string;
+  callerLabel: string;
+  callerNumber?: string | null;
+  score: number;
+  reason: string;
+}): Promise<void> {
+  const body = `Possible ${input.reason} (${input.score}%). ${input.callerLabel}. Reply BLOCK.`;
+  const provider = process.env.MESSAGING_PROVIDER ?? "photon";
+  if (provider === "sms") {
+    await getMessagingProvider().send(input.to, body);
+    return;
+  }
+  const { sendAlertWithPoll } = await import("./photon");
+  await sendAlertWithPoll(input.to, body, input.callerNumber);
 }
 
 export function getMessagingProvider(): MessagingProvider {
