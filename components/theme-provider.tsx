@@ -4,7 +4,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -31,14 +30,15 @@ function applyTheme(mode: ThemeMode) {
   document.documentElement.setAttribute("data-theme", themeDataAttribute(mode));
 }
 
+function readInitialTheme(): ThemeMode {
+  if (typeof document === "undefined") return "light";
+  return document.documentElement.getAttribute("data-theme") === "dark"
+    ? "dark"
+    : "light";
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeMode>("light");
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    const initial: ThemeMode = stored === "dark" ? "dark" : "light";
-    setThemeState(initial);
-    applyTheme(initial);
-  }, []);
+  const [theme, setThemeState] = useState<ThemeMode>(readInitialTheme);
 
   const setTheme = useCallback((mode: ThemeMode) => {
     setThemeState(mode);

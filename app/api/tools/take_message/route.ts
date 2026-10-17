@@ -1,6 +1,3 @@
-import { NextResponse } from "next/server";
-
-
 import { takeMessageRequestSchema } from "@/lib/contracts";
 import { getMessagingProvider } from "@/lib/messaging";
 import {
@@ -54,8 +51,6 @@ export async function POST(req: Request) {
 
     const address = owner.imessage_handle || owner.phone;
     const channel = "imessage";
-    const channel =
-      (process.env.MESSAGING_PROVIDER ?? "photon") === "sms" ? "sms" : "imessage";
     const bodyText = `Message from ${caller_name} (${callback_number}): ${message}`;
     let sendError: string | null = null;
     try {

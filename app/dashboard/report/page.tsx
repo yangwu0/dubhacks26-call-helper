@@ -3,7 +3,15 @@
 import { useEffect, useState } from "react";
 import { minutesBetween } from "@/components/format";
 import { useSiftDirectory } from "@/components/sift-provider";
-import { bodyMuted, btnPrimary, cardClass, pageEyebrow, pageTitle } from "@/components/styles";
+import {
+  bodyMuted,
+  btnPrimary,
+  cardClass,
+  metaMuted,
+  pageEyebrow,
+  pageTitle,
+  sectionTitle,
+} from "@/components/styles";
 import { REPORT_PLACEHOLDER, type CallRecord } from "@/lib/mockCallData";
 
 type Stats = {
@@ -121,14 +129,14 @@ export default function ReportPage() {
       </div>
       <section className={`${cardClass} mt-5`}>
         <div className="card-body">
-          <h2 className="font-display card-title text-2xl">The note</h2>
-          <p className={`max-w-3xl text-lg ${bodyMuted}`}>{paragraph}</p>
+          <h2 className={sectionTitle}>The note</h2>
+          <p className={`max-w-3xl ${bodyMuted}`}>{paragraph}</p>
           <div className="card-actions mt-4 justify-start">
             <button type="button" onClick={sendReport} disabled={sending} className={btnPrimary}>
               {sending ? "Sending…" : "Send report to my phone"}
             </button>
           </div>
-          {sendNote ? <p className="text-base text-base-content/65">{sendNote}</p> : null}
+          {sendNote ? <p className={metaMuted}>{sendNote}</p> : null}
         </div>
       </section>
     </div>

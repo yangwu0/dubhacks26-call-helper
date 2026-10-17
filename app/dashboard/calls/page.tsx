@@ -4,7 +4,15 @@ import Link from "next/link";
 import { actionText, formatPhone, formatWhen } from "@/components/format";
 import { riskTone } from "@/components/risk-tone";
 import { useSiftDirectory } from "@/components/sift-provider";
-import { bodyMuted, cardClass, pageEyebrow, pageTitle, riskPill } from "@/components/styles";
+import {
+  cardClass,
+  labelCaps,
+  metaMuted,
+  pageEyebrow,
+  pageSubtitle,
+  pageTitle,
+  riskPill,
+} from "@/components/styles";
 
 export default function CallsPage() {
   const { calls, usingSample } = useSiftDirectory();
@@ -13,7 +21,7 @@ export default function CallsPage() {
     <div>
       <p className={pageEyebrow}>The log</p>
       <h1 className={pageTitle}>Calls</h1>
-      <p className={`mt-2 ${bodyMuted}`}>
+      <p className={pageSubtitle}>
         {usingSample ? "Sample calls, ready for the demo." : "Updating from your line."}
       </p>
       <div className={`${cardClass} mt-6`}>
@@ -21,13 +29,13 @@ export default function CallsPage() {
           <div className="overflow-x-auto">
             <table className="table table-zebra">
               <thead>
-                <tr className="text-xs uppercase tracking-wide text-base-content/60">
-                  <th>When</th>
-                  <th>Caller</th>
-                  <th>Number</th>
-                  <th>Name check</th>
-                  <th>Risk</th>
-                  <th>Action</th>
+                <tr>
+                  <th className={labelCaps}>When</th>
+                  <th className={labelCaps}>Caller</th>
+                  <th className={labelCaps}>Number</th>
+                  <th className={labelCaps}>Name check</th>
+                  <th className={labelCaps}>Risk</th>
+                  <th className={labelCaps}>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -50,7 +58,7 @@ export default function CallsPage() {
                           >
                             {call.callerName || "Unknown"}
                           </Link>
-                          <p className="text-sm text-base-content/65">{call.callerIntent}</p>
+                          <p className={metaMuted}>{call.callerIntent}</p>
                         </td>
                         <td className="text-base-content/70">{formatPhone(call.callerNumber)}</td>
                         <td>

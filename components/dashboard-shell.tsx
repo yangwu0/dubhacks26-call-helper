@@ -22,7 +22,7 @@ function active(pathname: string, href: string) {
 function NavTabs({ pathname }: { pathname: string | null }) {
   return (
     <nav
-      className="inline-flex flex-nowrap gap-0.5 rounded-box border border-base-300/60 bg-base-200/80 p-1 shadow-sm"
+      className="inline-flex flex-nowrap gap-0.5 rounded-xl border border-base-300/60 bg-base-200/80 p-1 shadow-sm"
       aria-label="Dashboard sections"
     >
       {LINKS.map((link) => {
@@ -32,7 +32,7 @@ function NavTabs({ pathname }: { pathname: string | null }) {
             key={link.href}
             href={link.href}
             aria-current={on ? "page" : undefined}
-            className={`btn btn-sm min-h-9 rounded-md px-3 text-sm font-semibold no-underline ${
+            className={`btn btn-sm min-h-9 rounded-xl px-3 text-sm font-semibold no-underline ${
               on ? "btn-primary" : "btn-ghost text-base-content/80 hover:bg-base-100"
             }`}
           >
@@ -59,14 +59,14 @@ export function DashboardShell({ children }: { children: ReactNode }) {
               <Link href="/dashboard" className="flex items-center gap-2.5 px-1">
                 <SiftLogo size="md" />
                 <span className="hidden sm:block">
-                  <span className="font-display block text-lg font-bold leading-none">Sift</span>
+                  <span className="font-display block text-lg font-bold leading-none mt-2">Sift</span>
                   <span className="text-xs text-base-content/70">Looking out for your line</span>
                 </span>
               </Link>
             </div>
-            <div className="navbar-end gap-0.5">
+            <div className="navbar-end gap-2">
               <ThemeToggle />
-              <Link href="/" className="btn btn-ghost btn-sm text-sm font-semibold">
+              <Link href="/" className="btn btn-ghost btn-sm text-sm font-semibold h-10 w-auto rounded-xl">
                 Sign out
               </Link>
             </div>

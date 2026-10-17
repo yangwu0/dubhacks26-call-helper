@@ -1,5 +1,4 @@
 import { photonVoice } from "./voice-photon";
-import { twilioVoice } from "./voice-twilio";
 
 export type ForwardCallInput = {
   callId: string;
@@ -31,10 +30,7 @@ export interface VoiceProvider {
 export function getVoiceProvider(): VoiceProvider {
   const provider = process.env.VOICE_PROVIDER ?? "photon";
   if (provider === "photon") return photonVoice;
-  if (provider === "twilio") {
-    // lib/voice-twilio.ts is owned by WS1 and is not created here.
-    throw new Error(
-      "TODO(ws1): wire lib/voice-twilio.ts into getVoiceProvider().",
-    );
-  }
-
+  throw new Error(
+    `Unknown VOICE_PROVIDER "${provider}". Sift uses photon only.`,
+  );
+}
