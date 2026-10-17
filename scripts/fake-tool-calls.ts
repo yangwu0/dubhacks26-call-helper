@@ -2,7 +2,7 @@
  * Curl every Sift tool, plus init and post-call, against a running app.
  *
  *   pnpm dev
- *   node --env-file=.env --import tsx scripts/fake-tool-calls.ts
+ *   node --env-file=.env.local --import tsx scripts/fake-tool-calls.ts
  *
  * Requires SIFT_WEBHOOK_SECRET, ELEVENLABS_WEBHOOK_SECRET, and Supabase
  * service-role env vars. Prints the rows it created.
