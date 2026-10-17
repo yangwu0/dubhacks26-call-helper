@@ -30,13 +30,16 @@ export interface VoiceProvider {
 export function getVoiceProvider(): VoiceProvider {
   const provider = process.env.VOICE_PROVIDER ?? "twilio";
   if (provider === "photon") return photonVoice;
+<<<<<<< Updated upstream
   if (provider === "twilio") {
     // lib/voice-twilio.ts is owned by WS1 and is not created here.
     throw new Error(
       "TODO(ws1): wire lib/voice-twilio.ts into getVoiceProvider().",
     );
   }
+=======
+>>>>>>> Stashed changes
   throw new Error(
-    `Unknown VOICE_PROVIDER "${provider}". Expected twilio or photon.`,
+    `Unknown VOICE_PROVIDER "${provider}". Sift uses photon only (twilio is deprecated).`,
   );
 }

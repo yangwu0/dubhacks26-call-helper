@@ -1,15 +1,15 @@
 export type RiskTone = "safe" | "warn" | "scam";
 
-export const RISK_STROKE: Record<RiskTone, string> = {
-  safe: "#34d399",
-  warn: "#fbbf24",
-  scam: "#fb7185",
-};
-
 export const RISK_LABEL: Record<RiskTone, string> = {
   safe: "Safe",
   warn: "Caution",
   scam: "Scam risk",
+};
+
+export const RISK_STROKE: Record<RiskTone, string> = {
+  safe: "var(--color-success)",
+  warn: "var(--color-warning)",
+  scam: "var(--color-error)",
 };
 
 export function riskTone(score: number): RiskTone {

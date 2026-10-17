@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { minutesBetween } from "@/components/format";
 import { useSiftDirectory } from "@/components/sift-provider";
-import { cardClass } from "@/components/styles";
+import { bodyMuted, btnPrimary, cardClass, pageEyebrow, pageTitle } from "@/components/styles";
 import { REPORT_PLACEHOLDER, type CallRecord } from "@/lib/mockCallData";
 
 type Stats = {
@@ -109,28 +109,27 @@ export default function ReportPage() {
 
   return (
     <div>
-      <p className="text-sm font-medium text-slate-500">This week</p>
-      <h1 className="font-display text-4xl font-extrabold tracking-tight">Report</h1>
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <p className={pageEyebrow}>This week</p>
+      <h1 className={pageTitle}>Report</h1>
+      <div className="stats stats-vertical mt-6 w-full shadow-md sm:stats-horizontal">
         {tiles.map((tile) => (
-          <article key={tile.label} className={`${cardClass} px-5 py-5`}>
-            <p className="text-sm font-medium text-slate-500">{tile.label}</p>
-            <p className="font-display mt-2 text-5xl font-extrabold tracking-tight">{tile.value}</p>
-          </article>
+          <div key={tile.label} className="stat bg-base-100">
+            <div className="stat-title font-semibold">{tile.label}</div>
+            <div className="stat-value font-display text-3xl text-primary">{tile.value}</div>
+          </div>
         ))}
       </div>
-      <section className={`${cardClass} mt-5 px-6 py-6`}>
-        <h2 className="font-display text-2xl font-extrabold">The note</h2>
-        <p className="mt-3 max-w-3xl text-lg leading-relaxed text-slate-600">{paragraph}</p>
-        <button
-          type="button"
-          onClick={sendReport}
-          disabled={sending}
-          className="mt-6 rounded-3xl bg-emerald-400 px-5 py-3 font-semibold text-emerald-950 transition hover:bg-emerald-300 disabled:opacity-60"
-        >
-          {sending ? "Sending…" : "Send report to my phone"}
-        </button>
-        {sendNote ? <p className="mt-3 text-sm text-slate-500">{sendNote}</p> : null}
+      <section className={`${cardClass} mt-5`}>
+        <div className="card-body">
+          <h2 className="font-display card-title text-2xl">The note</h2>
+          <p className={`max-w-3xl text-lg ${bodyMuted}`}>{paragraph}</p>
+          <div className="card-actions mt-4 justify-start">
+            <button type="button" onClick={sendReport} disabled={sending} className={btnPrimary}>
+              {sending ? "Sending…" : "Send report to my phone"}
+            </button>
+          </div>
+          {sendNote ? <p className="text-base text-base-content/65">{sendNote}</p> : null}
+        </div>
       </section>
     </div>
   );

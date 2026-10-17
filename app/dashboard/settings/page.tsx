@@ -3,10 +3,15 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { formatPhone } from "@/components/format";
 import { useSiftDirectory } from "@/components/sift-provider";
-import { cardClass } from "@/components/styles";
-
-const fieldClass =
-  "mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-800 outline-none ring-emerald-400/30 placeholder:text-slate-400 focus:bg-white focus:ring-4";
+import {
+  btnDanger,
+  btnPrimary,
+  cardClass,
+  cardHeading,
+  inputClass,
+  pageEyebrow,
+  pageTitle,
+} from "@/components/styles";
 
 export default function SettingsPage() {
   const { owner, blocked, usingSample, saveOwner, addBlocked, removeBlocked } = useSiftDirectory();
@@ -63,138 +68,135 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <p className="text-sm font-medium text-slate-500">Your line</p>
-      <h1 className="font-display text-4xl font-extrabold tracking-tight">Settings</h1>
-      <p className="mt-2 text-slate-500">
+      <p className={pageEyebrow}>Your line</p>
+      <h1 className={pageTitle}>Settings</h1>
+      <p className="mt-2 text-lg text-base-content/70">
         {usingSample ? "Sample profile, until the directory connects." : "Connected to your directory."}
       </p>
 
       <div className="mt-6 grid gap-5 xl:grid-cols-2">
-        <form onSubmit={onSave} className={`${cardClass} px-6 py-6`}>
-          <h2 className="font-display text-2xl font-extrabold">Owner</h2>
-          <label className="mt-5 block text-sm font-semibold" htmlFor="owner-name">
-            Name
-          </label>
-          <input
-            id="owner-name"
-            value={name}
-            onChange={(event) => {
-              markDirty();
-              setName(event.target.value);
-            }}
-            className={fieldClass}
-          />
-          <label className="mt-5 block text-sm font-semibold" htmlFor="owner-phone">
-            Phone
-          </label>
-          <input
-            id="owner-phone"
-            value={phone}
-            onChange={(event) => {
-              markDirty();
-              setPhone(event.target.value);
-            }}
-            placeholder="+12065550100"
-            className={fieldClass}
-          />
-          <p className="mt-5 text-sm font-semibold">Aliases</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {aliases.map((alias) => (
-              <button
-                key={alias}
-                type="button"
-                onClick={() => {
+        <form onSubmit={onSave} className={cardClass}>
+          <div className="card-body gap-4">
+            <h2 className={cardHeading}>Owner</h2>
+            <fieldset className="fieldset">
+              <legend className="fieldset-legend font-bold">Name</legend>
+              <input
+                id="owner-name"
+                value={name}
+                onChange={(event) => {
                   markDirty();
-                  setAliases((current) => current.filter((item) => item !== alias));
+                  setName(event.target.value);
                 }}
-                className="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700"
-              >
-                {alias} ×
-              </button>
-            ))}
-          </div>
-          <div className="mt-3 flex gap-2">
-            <input
-              value={aliasDraft}
-              onChange={(event) => setAliasDraft(event.target.value)}
-              placeholder="Add an alias"
-              className={fieldClass}
-            />
-            <button
-              type="button"
-              onClick={addAlias}
-              className="mt-2 shrink-0 rounded-2xl bg-slate-100 px-4 font-semibold text-slate-700"
-            >
-              Add
-            </button>
-          </div>
-          <button
-            type="submit"
-            className="mt-6 rounded-3xl bg-emerald-400 px-5 py-3 font-semibold text-emerald-950"
-          >
-            Save profile
-          </button>
-        </form>
-
-        <section className={`${cardClass} px-6 py-6`}>
-          <h2 className="font-display text-2xl font-extrabold">Blocked numbers</h2>
-          <ul className="mt-4 space-y-3">
-            {blocked.length === 0 ? (
-              <li className="text-slate-500">Nothing is blocked.</li>
-            ) : (
-              blocked.map((item) => (
-                <li
-                  key={item.number}
-                  className="flex items-start justify-between gap-3 rounded-2xl bg-slate-50 px-4 py-3"
-                >
-                  <div>
-                    <p className="font-semibold">{formatPhone(item.number)}</p>
-                    <p className="text-sm text-slate-500">{item.reason}</p>
-                  </div>
+                className={inputClass}
+              />
+            </fieldset>
+            <fieldset className="fieldset">
+              <legend className="fieldset-legend font-bold">Phone</legend>
+              <input
+                id="owner-phone"
+                value={phone}
+                onChange={(event) => {
+                  markDirty();
+                  setPhone(event.target.value);
+                }}
+                placeholder="+12065550100"
+                className={inputClass}
+              />
+            </fieldset>
+            <div>
+              <p className="mb-2 font-bold">Aliases</p>
+              <div className="flex flex-wrap gap-2">
+                {aliases.map((alias) => (
                   <button
+                    key={alias}
                     type="button"
                     onClick={() => {
-                      void removeBlocked(item.number).then((result) => setNote(result.message));
+                      markDirty();
+                      setAliases((current) => current.filter((item) => item !== alias));
                     }}
-                    className="rounded-2xl px-3 py-1 text-sm font-semibold text-rose-700"
+                    className="badge badge-lg badge-neutral gap-1 font-semibold"
                   >
-                    Remove
+                    {alias}
+                    <span aria-hidden>×</span>
                   </button>
-                </li>
-              ))
-            )}
-          </ul>
-          <form onSubmit={onBlock} className="mt-5">
-            <label className="block text-sm font-semibold" htmlFor="block-number">
-              Add a number
-            </label>
-            <input
-              id="block-number"
-              value={blockNumber}
-              onChange={(event) => setBlockNumber(event.target.value)}
-              placeholder="+18005550123"
-              className={fieldClass}
-            />
-            <label className="mt-4 block text-sm font-semibold" htmlFor="block-reason">
-              Reason
-            </label>
-            <input
-              id="block-reason"
-              value={blockReason}
-              onChange={(event) => setBlockReason(event.target.value)}
-              placeholder="Why should Sift refuse this caller?"
-              className={fieldClass}
-            />
-            <button
-              type="submit"
-              className="mt-5 rounded-3xl bg-rose-400 px-5 py-3 font-semibold text-rose-950"
-            >
-              Block number
+                ))}
+              </div>
+              <div className="join mt-3 w-full">
+                <input
+                  value={aliasDraft}
+                  onChange={(event) => setAliasDraft(event.target.value)}
+                  placeholder="Add an alias"
+                  className="input input-bordered join-item min-w-0 flex-1 bg-base-200/30"
+                />
+                <button type="button" onClick={addAlias} className="btn btn-neutral join-item">
+                  Add
+                </button>
+              </div>
+            </div>
+            <button type="submit" className={`${btnPrimary} mt-2`}>
+              Save profile
             </button>
-          </form>
+          </div>
+        </form>
+
+        <section className={cardClass}>
+          <div className="card-body gap-4">
+            <h2 className={cardHeading}>Blocked numbers</h2>
+            <ul className="space-y-3">
+              {blocked.length === 0 ? (
+                <li className="text-base-content/65">Nothing is blocked.</li>
+              ) : (
+                blocked.map((item) => (
+                  <li
+                    key={item.number}
+                    className="flex items-start justify-between gap-3 rounded-box bg-base-200/60 px-4 py-3"
+                  >
+                    <div>
+                      <p className="font-semibold">{formatPhone(item.number)}</p>
+                      <p className="text-sm text-base-content/65">{item.reason}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void removeBlocked(item.number).then((result) => setNote(result.message));
+                      }}
+                      className="btn btn-ghost btn-sm text-error"
+                    >
+                      Remove
+                    </button>
+                  </li>
+                ))
+              )}
+            </ul>
+            <form onSubmit={onBlock} className="space-y-4 border-t border-base-300/50 pt-4">
+              <fieldset className="fieldset">
+                <legend className="fieldset-legend font-bold">Add a number</legend>
+                <input
+                  id="block-number"
+                  value={blockNumber}
+                  onChange={(event) => setBlockNumber(event.target.value)}
+                  placeholder="+18005550123"
+                  className={inputClass}
+                />
+              </fieldset>
+              <fieldset className="fieldset">
+                <legend className="fieldset-legend font-bold">Reason</legend>
+                <input
+                  id="block-reason"
+                  value={blockReason}
+                  onChange={(event) => setBlockReason(event.target.value)}
+                  placeholder="Why should Sift refuse this caller?"
+                  className={inputClass}
+                />
+              </fieldset>
+              <button type="submit" className={btnDanger}>
+                Block number
+              </button>
+            </form>
+          </div>
         </section>
       </div>
-      {note ? <p className="mt-4 text-sm text-slate-500">{note}</p> : null}
+      {note ? <p className="mt-4 text-base text-base-content/65">{note}</p> : null}
     </div>
   );
 }

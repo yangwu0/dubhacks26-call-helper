@@ -12,7 +12,7 @@ export function DemoToggle({
       type="button"
       onClick={onToggle}
       aria-pressed={running}
-      className="rounded-full px-3 py-1.5 text-sm font-medium text-slate-400 opacity-70 transition hover:bg-white hover:text-slate-700 hover:opacity-100"
+      className={`btn btn-sm font-semibold ${running ? "btn-accent" : "btn-outline"}`}
     >
       {running ? "Stop demo" : "Demo"}
     </button>

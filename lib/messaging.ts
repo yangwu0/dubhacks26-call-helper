@@ -1,13 +1,5 @@
-import { sendSms } from "./twilio";
-
 export interface MessagingProvider {
   send(to: string, body: string): Promise<void>;
-}
-
-export class TwilioSmsMessaging implements MessagingProvider {
-  async send(to: string, body: string): Promise<void> {
-    await sendSms(to, body);
-  }
 }
 
 // TODO(photon): WS3 implements this with spectrum-ts.
@@ -22,9 +14,8 @@ export class PhotonMessaging implements MessagingProvider {
 
 export function getMessagingProvider(): MessagingProvider {
   const provider = process.env.MESSAGING_PROVIDER ?? "photon";
-  if (provider === "sms") return new TwilioSmsMessaging();
   if (provider === "photon") return new PhotonMessaging();
   throw new Error(
-    `Unknown MESSAGING_PROVIDER "${provider}". Expected photon or sms.`,
+    `Unknown MESSAGING_PROVIDER "${provider}". Sift uses photon only (Twilio SMS removed).`,
   );
 }

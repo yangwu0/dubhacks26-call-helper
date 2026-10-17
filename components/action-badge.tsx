@@ -12,11 +12,11 @@ const LABEL: Record<RoutingStatus, string> = {
 };
 
 const STYLE: Record<RoutingStatus, string> = {
-  waiting: "bg-slate-100 text-slate-600",
-  screening: "bg-emerald-400 text-emerald-950",
-  forwarding: "bg-emerald-400 text-emerald-950",
-  blocked: "bg-rose-400 text-rose-950",
-  message_taken: "bg-amber-400 text-amber-950",
+  waiting: "badge-neutral badge-soft",
+  screening: "badge-success badge-soft",
+  forwarding: "badge-success",
+  blocked: "badge-error",
+  message_taken: "badge-warning badge-soft",
 };
 
 export function badgeForCall(call: {
@@ -35,11 +35,11 @@ export function ActionBadge({ status }: { status: RoutingStatus }) {
 
   return (
     <div
-      className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${STYLE[status]}`}
+      className={`badge badge-md gap-2 px-3 py-3 text-sm font-bold ${STYLE[status]}`}
       aria-live="polite"
     >
       <motion.span
-        className="h-2 w-2 rounded-full bg-current"
+        className="size-2 rounded-full bg-current"
         animate={pulse ? { opacity: [1, 0.35, 1] } : { opacity: 1 }}
         transition={pulse ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" } : { duration: 0.2 }}
       />
