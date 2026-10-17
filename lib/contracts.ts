@@ -68,6 +68,8 @@ export const forwardCallRequestSchema = z.object({
 export const forwardCallResponseSchema = z.object({
   ok: z.boolean(),
   message: z.string(),
+  // Present when the agent should transfer this live SIP call to the owner.
+  transfer_number: z.string().optional(),
 });
 
 export const takeMessageRequestSchema = z.object({
@@ -81,13 +83,14 @@ export const takeMessageResponseSchema = z.object({
   ok: z.boolean(),
 });
 
-// ElevenLabs Twilio personalization webhook.
-// https://elevenlabs.io/docs/eleven-agents/customization/personalization/twilio-personalization
+// Conversation initiation webhook for Twilio and SIP trunk calls.
+// https://elevenlabs.io/docs/eleven-agents/customization/personalization
 export const elevenLabsInitRequestSchema = z.object({
   caller_id: z.string(),
   agent_id: z.string(),
   called_number: z.string(),
-  call_sid: z.string(),
+  call_sid: z.string().optional(),
+  call_id: z.string().optional(),
   conversation_id: z.string(),
 });
 

@@ -1,13 +1,144 @@
-<<<<<<< Updated upstream
 import { NextResponse } from "next/server";
+import { after } from "next/server";
+import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
+import { summarize } from "@/lib/anthropic";
+import { postCallWebhookSchema, type PostCallWebhook } from "@/lib/contracts";
+import { getMessagingProvider } from "@/lib/messaging";
+import { classifyCall } from "@/lib/scoring";
+import { verifySecret } from "@/lib/auth";
+import {
+  asStringArray,
+  getCallByConversation,
+  getOwner,
+  insertEvent,
+  json,
+  serviceClient,
+  type CallRow,
+} from "@/app/api/tools/db";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-// TODO: verify the ElevenLabs signature, summarize with Claude, update the call, message the owner.
-export async function POST() {
-  return NextResponse.json(
-    { error: "Not implemented", todo: "elevenlabs/post-call" },
-    { status: 501 },
+function normalizeEvent(event: unknown): unknown {
+  if (!event || typeof event !== "object") return event;
+  const record = event as {
+    type?: string;
+    data?: { transcript?: unknown };
+  };
+  if (record.type !== "post_call_transcription" || !Array.isArray(record.data?.transcript)) {
+    return event;
+  }
+  record.data.transcript = record.data.transcript.map((turn) => {
+    if (!turn || typeof turn !== "object") return turn;
+    const copy = { ...(turn as Record<string, unknown>) };
+    if (copy.message === null) delete copy.message;
+    return copy;
+  });
+  return record;
+}
+
+function transcriptText(
+  turns: { role: string; message?: string }[] | undefined,
+): string {
+  return (turns ?? [])
+    .map((turn) => `${turn.role}: ${turn.message ?? ""}`.trim())
+    .filter((line) => !line.endsWith(":"))
+    .join("\n");
+}
+
+async function sendSummary(
+  supabase: SupabaseClient,
+  call: CallRow,
+  summary: string,
+) {
+  const owner = await getOwner(supabase);
+  const address = owner.imessage_handle || owner.phone;
+  const channel =
+    (process.env.MESSAGING_PROVIDER ?? "photon") === "sms" ? "sms" : "imessage";
+  let sendError: string | null = null;
+  try {
+    await getMessagingProvider().send(address, summary);
+  } catch (error) {
+    sendError = error instanceof Error ? error.message : "send failed";
+  }
+  const { error } = await supabase.from("messages").insert({
+    direction: "out",
+    channel,
+    address,
+    body: summary,
+    call_id: call.id,
+  });
+  if (error) throw new Error(error.message);
+  await insertEvent(supabase, call.id, "action", {
+    step: "summary_sent",
+    send_error: sendError,
+  });
+}
+
+async function finishTranscription(
+  supabase: SupabaseClient,
+  event: Extract<PostCallWebhook, { type: "post_call_transcription" }>,
+) {
+  const call = await getCallByConversation(
+    supabase,
+    event.data.conversation_id,
   );
-=======
+  if (!call) {
+    console.error("post-call missing call", event.data.conversation_id);
+    return;
+  }
+
+  const transcript = event.data.transcript ?? [];
+  const text = transcriptText(transcript);
+  let summary: string;
+  try {
+    summary = await summarize(text);
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : "summarize failed";
+    const who = call.caller_name || call.caller_number || "unknown caller";
+    summary = `Call from ${who}. Risk ${call.risk_score ?? 0}. ${call.caller_intent ?? "No intent recorded."} Summary unavailable (${reason}).`;
+    console.error("summarize", reason);
+  }
+
+  const decision = classifyCall({
+    riskScore: call.risk_score ?? 0,
+    targetMatch: call.target_match,
+    action: call.action,
+    callerIntent: call.caller_intent,
+  });
+
+  const { error } = await supabase
+    .from("calls")
+    .update({
+      status: "completed",
+      ended_at: new Date().toISOString(),
+      transcript,
+      summary,
+      classification: decision.classification,
+      action: decision.action,
+    })
+    .eq("id", call.id);
+  if (error) throw new Error(error.message);
+
+  if (decision.classification === "scam" && call.caller_number) {
+    const reason =
+      asStringArray(call.risk_reasons).join("; ") || "Classified as a scam";
+    const { error: blockError } = await supabase.from("blocked_numbers").upsert(
+      { number: call.caller_number, reason },
+      { onConflict: "number" },
+    );
+    if (blockError) throw new Error(blockError.message);
+  }
+
+  await sendSummary(supabase, call, summary);
+}
+
+async function finishFailure(
+  supabase: SupabaseClient,
+  event: Extract<PostCallWebhook, { type: "call_initiation_failure" }>,
+) {
+  const call = await getCallByConversation(
+    supabase,
+    event.data.conversation_id,
+  );
 import { after } from "next/server";
 import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
 import { summarize } from "@/lib/anthropic";
@@ -242,5 +373,4 @@ export async function POST(req: Request) {
   });
 
   return json({ received: true });
->>>>>>> Stashed changes
 }

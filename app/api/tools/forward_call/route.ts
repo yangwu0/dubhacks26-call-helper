@@ -1,16 +1,12 @@
-<<<<<<< Updated upstream
 import { NextResponse } from "next/server";
 
-// TODO: verify x-sift-secret with verifySecret(), then bridge the owner. WS1 owns the Twilio call.
-export async function POST() {
-  return NextResponse.json(
-    { error: "Not implemented", todo: "forward_call" },
-    { status: 501 },
-  );
-=======
 import { forwardCallRequestSchema } from "@/lib/contracts";
 import { FORWARD_MAX_SCORE } from "@/lib/scoring";
 import { startForward } from "@/lib/forward";
+import { after } from "next/server";
+import { forwardCallRequestSchema } from "@/lib/contracts";
+import { FORWARD_MAX_SCORE } from "@/lib/scoring";
+import { startForward, waitForOwnerAnswer } from "@/lib/forward";
 import {
   getCallByConversation,
   getOwner,
@@ -66,6 +62,9 @@ export async function POST(req: Request) {
       reason,
       urgency,
     });
+    if (result.ownerCallSid) {
+      after(() => waitForOwnerAnswer(result));
+    }
 
     const message = "Connecting you now.";
     await insertEvent(supabase, call.id, "tool", {
@@ -75,6 +74,8 @@ export async function POST(req: Request) {
       reason,
       urgency,
       transfer_number: result.transferNumber ?? null,
+      owner_call_sid: result.ownerCallSid || null,
+      conference: result.conferenceName || null,
     });
     return json({
       ok: true,
@@ -103,5 +104,4 @@ export async function POST(req: Request) {
     }
     return json({ ok: false, message });
   }
->>>>>>> Stashed changes
 }

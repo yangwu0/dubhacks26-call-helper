@@ -1,13 +1,17 @@
 import { NextResponse } from "next/server";
 
-<<<<<<< Updated upstream
-// TODO: verify x-sift-secret with verifySecret(), then store the message and text the owner.
-export async function POST() {
-  return NextResponse.json(
-    { error: "Not implemented", todo: "take_message" },
-    { status: 501 },
-  );
-=======
+
+import { takeMessageRequestSchema } from "@/lib/contracts";
+import { getMessagingProvider } from "@/lib/messaging";
+import {
+  getCallByConversation,
+  getOwner,
+  insertEvent,
+  json,
+  rejectIfUnauthorized,
+  serviceClient,
+} from "@/app/api/tools/db";
+
 export async function POST(req: Request) {
   const unauthorized = rejectIfUnauthorized(req);
   if (unauthorized) return unauthorized;
@@ -50,6 +54,8 @@ export async function POST(req: Request) {
 
     const address = owner.imessage_handle || owner.phone;
     const channel = "imessage";
+    const channel =
+      (process.env.MESSAGING_PROVIDER ?? "photon") === "sms" ? "sms" : "imessage";
     const bodyText = `Message from ${caller_name} (${callback_number}): ${message}`;
     let sendError: string | null = null;
     try {
@@ -82,5 +88,4 @@ export async function POST(req: Request) {
     console.error("take_message", messageText);
     return json({ error: messageText }, 500);
   }
->>>>>>> Stashed changes
 }

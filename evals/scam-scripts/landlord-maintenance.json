@@ -1,0 +1,41 @@
+{
+  "id": "landlord-maintenance",
+  "title": "Cedar Court schedules a sink repair",
+  "expected_classification": "legit_important",
+  "caller_name": "Sam Ortiz",
+  "caller_intent": "Schedule a maintenance visit for a kitchen leak",
+  "turns": [
+    {
+      "speaker": "caller",
+      "text": "Hi, this is Sam Ortiz, the manager at Cedar Court Apartments. I'm calling Alex Kim about the unit."
+    },
+    {
+      "speaker": "agent",
+      "text": "This is an AI assistant for Alex Kim, and this call may be recorded. What is going on at the unit?"
+    },
+    {
+      "speaker": "caller",
+      "text": "A neighbor noticed a slow drip under the kitchen sink. I'd like to schedule a plumber. There is no fee, and this is not about rent or the lease."
+    },
+    {
+      "speaker": "agent",
+      "text": "I can check free windows for a visit. I won't share other personal details."
+    },
+    {
+      "speaker": "caller",
+      "text": "Wednesday between 1 and 3, or Thursday between 9 and 11. Alex does not have to be home if we may enter. The office line is 206-555-0172."
+    },
+    {
+      "speaker": "agent",
+      "text": "Wednesday from 1 to 3 is free. Should I book the plumber then?"
+    },
+    {
+      "speaker": "caller",
+      "text": "Yes, book Wednesday from 1 to 3. If that stops working, Alex can call the office. I don't need a card or an account number."
+    },
+    {
+      "speaker": "agent",
+      "text": "Wednesday from 1 to 3 is booked for the sink repair."
+    }
+  ]
+}

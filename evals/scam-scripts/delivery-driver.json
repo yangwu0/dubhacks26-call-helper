@@ -1,0 +1,37 @@
+{
+  "id": "delivery-driver",
+  "title": "Maple Route driver gives an arrival window",
+  "expected_classification": "legit_routine",
+  "caller_name": "Chris Nguyen",
+  "caller_intent": "Say a package arrives today between 4 and 6pm",
+  "turns": [
+    {
+      "speaker": "caller",
+      "text": "Hi, this is Chris Nguyen, a driver with Maple Route Delivery. I have a package for Alex Kim."
+    },
+    {
+      "speaker": "agent",
+      "text": "This is an AI assistant for Alex Kim, and this call may be recorded. What should I pass along?"
+    },
+    {
+      "speaker": "caller",
+      "text": "I'll be in the neighborhood today between 4 and 6pm. I don't need a signature if the lobby is open."
+    },
+    {
+      "speaker": "agent",
+      "text": "I'll tell Alex about the 4 to 6 window. Do you need anything else?"
+    },
+    {
+      "speaker": "caller",
+      "text": "No fee, no link, and no card. If a gate code would be required, I can leave the package at the front desk instead."
+    },
+    {
+      "speaker": "agent",
+      "text": "No payment and no code needed. Anything else for the message?"
+    },
+    {
+      "speaker": "caller",
+      "text": "That's the whole message. The package arrives today between 4 and 6. If the time is bad, Alex can call Maple Route's main desk at 206-555-0160."
+    }
+  ]
+}
