@@ -144,6 +144,9 @@ export async function summarize(
   callMeta?: CallMeta,
 ): Promise<string | CallSummary> {
   const structured = await buildSummary(transcript, callMeta ?? {});
-  if (callMeta === undefined) return structured.summary;
+  if (callMeta === undefined) {
+    const { formatPostCallMessage } = await import("./messaging");
+    return formatPostCallMessage(structured);
+  }
   return structured;
 }
