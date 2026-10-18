@@ -8,7 +8,6 @@ import {
   cardClass,
   labelCaps,
   metaMuted,
-  pageEyebrow,
   pageSubtitle,
   pageTitle,
   riskPill,
@@ -19,10 +18,35 @@ export default function CallsPage() {
 
   return (
     <div>
-      <p className={pageEyebrow}>The log</p>
-      <h1 className={pageTitle}>Calls</h1>
+      <h1 className={pageTitle}>Log</h1>
       <p className={pageSubtitle}>Calls stored for your account.</p>
-      <div className={`${cardClass} mt-6`}>
+      <ul className="mt-6 flex flex-col gap-3 md:hidden">
+        {calls.length === 0 ? (
+          <li className="rounded-box bg-base-200 px-4 py-8 text-base-content/65">No calls yet.</li>
+        ) : (
+          calls.map((call) => {
+            const tone = riskTone(call.riskScore);
+            return (
+              <li key={call.id}>
+                <Link href={`/dashboard/calls/${call.id}`} className="block rounded-box bg-base-200 px-4 py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold">{call.callerName || "Unknown"}</p>
+                      <p className={metaMuted}>{formatPhone(call.callerNumber)}</p>
+                    </div>
+                    <span className={riskPill[tone]}>{call.riskScore}</span>
+                  </div>
+                  <p className={`mt-2 ${metaMuted}`}>
+                    {actionText(call.action, call.status)} · {formatWhen(call.startedAt)}
+                  </p>
+                  {call.callerIntent ? <p className={`mt-1 truncate ${metaMuted}`}>{call.callerIntent}</p> : null}
+                </Link>
+              </li>
+            );
+          })
+        )}
+      </ul>
+      <div className={`${cardClass} mt-6 hidden md:block`}>
         <div className="card-body p-0">
           <div className="overflow-x-auto">
             <table className="table table-zebra">

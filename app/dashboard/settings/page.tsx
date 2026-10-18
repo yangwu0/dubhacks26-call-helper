@@ -1,8 +1,10 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { formatPhone } from "@/components/format";
 import { useSiftDirectory } from "@/components/sift-provider";
+import { getOptionalBrowserClient } from "@/components/supabase-browser";
 import {
   btnDanger,
   btnPrimary,
@@ -16,6 +18,7 @@ import {
 } from "@/components/styles";
 
 export default function SettingsPage() {
+  const router = useRouter();
   const { owner, blocked, lineNote, lineStatus, saveOwner, addBlocked, removeBlocked } =
     useSiftDirectory();
   const [name, setName] = useState(owner.name);
@@ -260,6 +263,25 @@ export default function SettingsPage() {
         </section>
       </div>
       {note ? <p className={`mt-4 ${metaMuted}`}>{note}</p> : null}
+
+      <section className={`${cardClass} mt-5`}>
+        <div className="card-body">
+          <h2 className={cardHeading}>Sign out</h2>
+          <p className={metaMuted}>Leave this account on this device.</p>
+          <button
+            type="button"
+            onClick={() => {
+              const supabase = getOptionalBrowserClient();
+              void supabase?.auth.signOut().finally(() => {
+                router.replace("/");
+              });
+            }}
+            className="btn btn-outline mt-2 w-full font-semibold sm:w-auto"
+          >
+            Sign out
+          </button>
+        </div>
+      </section>
     </div>
   );
 }
