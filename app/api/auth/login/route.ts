@@ -1,7 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 import { sealOwner } from "@/lib/account-crypto";
 import { getOwnerByUserId } from "@/app/api/tools/db";
-import { DEMO_OWNER_PHONE, DEMO_PHOTON_NUMBER } from "@/lib/owner-phone";
+import {
+  DEMO_KNOWN_CONTACT,
+  DEMO_OWNER_PHONE,
+  DEMO_PHOTON_NUMBER,
+} from "@/lib/owner-phone";
 import { createServiceClient } from "@/lib/supabase";
 
 function json(data: unknown, status = 200) {
@@ -165,6 +169,20 @@ export async function POST(req: Request) {
         .eq("id", owner.id);
       if (updated.error) return json({ error: updated.error.message }, 500);
     }
+  }
+
+  // Demo known contact so inbound calls from this number get is_known_contact=true.
+  const known = await admin.from("contacts").upsert(
+    {
+      owner_id: userId,
+      number: DEMO_KNOWN_CONTACT,
+      name: "Known contact",
+      trusted: true,
+    },
+    { onConflict: "owner_id,number" },
+  );
+  if (known.error) {
+    console.error("seed known contact", known.error.message);
   }
 
   return json({

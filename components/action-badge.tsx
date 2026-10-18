@@ -9,6 +9,7 @@ const LABEL: Record<RoutingStatus, string> = {
   forwarding: "Forwarding",
   blocked: "Blocked",
   message_taken: "Message taken",
+  done: "Done",
 };
 
 const STYLE: Record<RoutingStatus, string> = {
@@ -17,6 +18,7 @@ const STYLE: Record<RoutingStatus, string> = {
   forwarding: "badge-success",
   blocked: "badge-error",
   message_taken: "badge-warning badge-soft",
+  done: "badge-neutral",
 };
 
 export function badgeForCall(call: {
@@ -27,7 +29,7 @@ export function badgeForCall(call: {
   if (call.action === "forwarded" || call.action === "booked") return "forwarding";
   if (call.action === "message_taken") return "message_taken";
   if (call.status === "in_progress") return "screening";
-  return "waiting";
+  return "done";
 }
 
 export function ActionBadge({ status }: { status: RoutingStatus }) {

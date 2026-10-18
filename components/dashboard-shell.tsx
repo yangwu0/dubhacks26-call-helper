@@ -72,7 +72,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
       >
         <header className="mb-8">
           <BrandHeader
-            href="/dashboard/calls"
+            href="/dashboard"
             end={
               <span className="hidden text-xs text-base-content/70 md:inline">
                 {owner.photonNumber

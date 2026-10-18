@@ -3,7 +3,8 @@ export type RoutingStatus =
   | "screening"
   | "forwarding"
   | "blocked"
-  | "message_taken";
+  | "message_taken"
+  | "done";
 
 export type TranscriptLine = {
   id: string;

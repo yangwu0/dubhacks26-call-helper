@@ -320,14 +320,30 @@ export async function isKnownContact(
   number: string,
 ): Promise<boolean> {
   const normalized = normalizePhone(number);
+  const candidates = Array.from(
+    new Set(
+      [number, normalized, normalized.replace(/^\+1/, ""), normalized.replace(/^\+/, "")].filter(
+        (value) => value.length > 0,
+      ),
+    ),
+  );
   const { data, error } = await supabase
     .from("contacts")
     .select("number")
     .eq("owner_id", ownerId)
-    .in("number", normalized === number ? [number] : [number, normalized])
+    .in("number", candidates)
     .limit(1);
   if (error) throw new Error(error.message);
-  return (data?.length ?? 0) > 0;
+  if ((data?.length ?? 0) > 0) return true;
+  // Also match if a stored contact normalizes to the same E.164 value.
+  const listed = await supabase
+    .from("contacts")
+    .select("number")
+    .eq("owner_id", ownerId);
+  if (listed.error) throw new Error(listed.error.message);
+  return (listed.data ?? []).some(
+    (row) => normalizePhone(String(row.number ?? "")) === normalized,
+  );
 }
 
 export function serviceClient() {

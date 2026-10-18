@@ -53,7 +53,10 @@ export async function startForward(input: {
 
   const { error } = await supabase
     .from("calls")
-    .update({ action: "forwarded" })
+    .update({
+      action: "forwarded",
+      ended_at: input.call.ended_at ?? new Date().toISOString(),
+    })
     .eq("id", input.call.id);
   if (error) throw new Error(error.message);
 

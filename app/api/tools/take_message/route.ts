@@ -33,6 +33,7 @@ export async function POST(req: Request) {
     const update: Record<string, unknown> = {
       caller_name,
       summary: storedSummary,
+      ended_at: call.ended_at ?? new Date().toISOString(),
     };
     if (!call.action || call.action === "none") {
       update.action = "message_taken";

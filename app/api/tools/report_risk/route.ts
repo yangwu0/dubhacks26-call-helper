@@ -52,6 +52,11 @@ export async function POST(req: Request) {
       summary: caller_intent,
     };
     if (caller_name) update.caller_name = caller_name;
+    // Mark scam path on the row so the dashboard leaves "Screening" even if post-call is late.
+    if (decision.recommendedAction === "end_as_scam") {
+      update.action = "blocked";
+      update.classification = "scam";
+    }
 
     const { error } = await supabase
       .from("calls")

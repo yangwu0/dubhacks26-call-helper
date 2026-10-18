@@ -106,7 +106,6 @@ export function mapCall(row: Record<string, unknown>, events: EventRow[] = []): 
   }
 
   const endedAt = text(row.ended_at) || null;
-  const status = endedAt ? "completed" : "in_progress";
   const classification =
     row.classification === "scam" ||
     row.classification === "legit_important" ||
@@ -120,6 +119,14 @@ export function mapCall(row: Record<string, unknown>, events: EventRow[] = []): 
     row.action === "booked"
       ? row.action
       : "none";
+  // Post-call sometimes never writes ended_at; don't leave calls stuck as Screening.
+  const STALE_MS = 10 * 60 * 1000;
+  const startedMs = new Date(text(row.started_at)).getTime();
+  const staleOpen =
+    !endedAt && Number.isFinite(startedMs) && Date.now() - startedMs > STALE_MS;
+  const terminal = action !== "none";
+  const status =
+    endedAt || terminal || staleOpen ? "completed" : "in_progress";
 
   return {
     id,
