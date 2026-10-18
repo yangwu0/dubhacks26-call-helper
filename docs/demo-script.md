@@ -2,7 +2,7 @@
 
 Record the dashboard at `/dashboard` on the left and the owner's iMessage thread with Sift on the right. The caller dials the Photon number. Sift's ElevenLabs agent answers on that line.
 
-If nobody can place the live call, press **Demo** on the dashboard for the picture, and run `pnpm exec tsx --env-file=.env.local scripts/call-test.ts` to play the tax script against the agent. That command is a text simulation, not a ringing phone. `ELEVENLABS_AGENT_ID` has to be filled in first.
+If nobody can place the live call, use the dashboard Demo control for the picture.
 
 Say the voiceover. The teammates say only the quoted lines.
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-10-18
+
+- Removed `evals/` (scam scripts + `run.ts`) and `scripts/call-test.ts`.
+- **Messaging removed** for now: no iMessage/SMS send, no `/api/photon/inbound`, no reply commands (`CALL`/`BLOCK`/…). Photon is voice/SIP only. Post-call and `take_message` still write to `calls`; weekly report returns JSON only. Deleted `lib/messaging.ts`, `lib/photon.ts`, `scripts/test-messaging.ts`. `formatPostCallMessage` lives in `lib/anthropic.ts`. Dropped `MESSAGING_PROVIDER` / `PHOTON_WEBHOOK_SECRET` from `.env.example` and `spectrum-ts` dependency.
+
 ## 2026-10-17
 
 - `owners.user_id` links a Supabase Auth user to their profile. Dashboard reads and settings writes go through that user's session. Tool contracts are unchanged.

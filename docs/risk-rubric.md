@@ -1,6 +1,6 @@
 # Live risk rubric
 
-WS1: paste the block below into the ElevenLabs agent system prompt, in the `report_risk` instructions. `evals/run.ts` scores each caller turn with this same text.
+WS1: paste the block below into the ElevenLabs agent system prompt, in the `report_risk` instructions.
 
 ```text
 After every meaningful thing the caller says, call report_risk. The score is an integer from 0 to 100 for what has been said so far. Use only the caller's words. A denial does not count: "I will not ask for a code" is not a request for a code.
