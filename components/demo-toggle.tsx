@@ -14,7 +14,7 @@ export function DemoToggle({
       aria-pressed={running}
       className={`btn btn-sm font-semibold ${running ? "btn-accent" : "btn-outline"}`}
     >
-      {running ? "Stop demo" : "Demo"}
+      {running ? "Stop simulation" : "Simulate scam call"}
     </button>
   );
 }

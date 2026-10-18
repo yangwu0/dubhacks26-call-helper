@@ -2,9 +2,9 @@ import { takeMessageRequestSchema } from "@/lib/contracts";
 import { getMessagingProvider } from "@/lib/messaging";
 import {
   getCallByConversation,
-  getOwner,
   insertEvent,
   json,
+  ownerForCall,
   rejectIfUnauthorized,
   serviceClient,
 } from "@/app/api/tools/db";
@@ -28,11 +28,9 @@ export async function POST(req: Request) {
 
   try {
     const supabase = serviceClient();
-    const [owner, call] = await Promise.all([
-      getOwner(supabase),
-      getCallByConversation(supabase, conversation_id),
-    ]);
+    const call = await getCallByConversation(supabase, conversation_id);
     if (!call) return json({ error: "unknown conversation" }, 404);
+    const owner = await ownerForCall(supabase, call);
 
     const storedSummary = message.trim();
     const update: Record<string, unknown> = {
@@ -48,6 +46,16 @@ export async function POST(req: Request) {
       .update(update)
       .eq("id", call.id);
     if (error) throw new Error(error.message);
+    if (!owner) {
+      await insertEvent(supabase, call.id, "tool", {
+        tool: "take_message",
+        ok: false,
+        reason: "no matched person",
+        caller_name,
+        callback_number,
+      });
+      return json({ ok: false });
+    }
 
     const address = owner.imessage_handle || owner.phone;
     const channel = "imessage";

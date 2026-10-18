@@ -12,6 +12,7 @@ export type EndCallInput = {
 
 export type CallOwnerInput = {
   reason: string;
+  toNumber?: string;
 };
 
 export type NormalizedInboundCall = {

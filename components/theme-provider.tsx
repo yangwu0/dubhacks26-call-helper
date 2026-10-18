@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -38,7 +39,14 @@ function readInitialTheme(): ThemeMode {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeMode>(readInitialTheme);
+  // Match the server render (`data-theme="sift"`). The boot script may already
+  // have switched the attribute from localStorage; sync after mount so the
+  // toggle icon does not disagree with the server HTML.
+  const [theme, setThemeState] = useState<ThemeMode>("light");
+
+  useEffect(() => {
+    setThemeState(readInitialTheme());
+  }, []);
 
   const setTheme = useCallback((mode: ThemeMode) => {
     setThemeState(mode);

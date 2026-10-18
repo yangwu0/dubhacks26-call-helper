@@ -1,7 +1,9 @@
 import { elevenLabsInitRequestSchema } from "@/lib/contracts";
 import {
-  getOwner,
+  getCallByConversation,
+  getOwnerById,
   insertEvent,
+  ownerForCalledNumber,
   isKnownContact,
   isNumberBlocked,
   json,
@@ -10,7 +12,7 @@ import {
   serviceClient,
 } from "@/app/api/tools/db";
 
-// Conversation initiation webhook. Runs for Photon SIP trunk calls and Twilio.
+// Conversation initiation webhook. The dialed Photon number picks the account.
 // https://elevenlabs.io/docs/eleven-agents/customization/personalization
 export async function POST(req: Request) {
   const unauthorized = rejectIfUnauthorized(req);
@@ -31,43 +33,62 @@ export async function POST(req: Request) {
   const { caller_id, called_number, conversation_id } = parsed.data;
   const callSid = parsed.data.call_sid || parsed.data.call_id || "";
   const callerNumber = normalizePhone(caller_id);
+  const calledNumber = normalizePhone(called_number);
 
   try {
     const supabase = serviceClient();
-    const owner = await getOwner(supabase);
-    const [blocked, known] = await Promise.all([
-      isNumberBlocked(supabase, callerNumber),
-      isKnownContact(supabase, callerNumber),
-    ]);
-
-    const { data: call, error } = await supabase
-      .from("calls")
-      .upsert(
-        {
-          owner_id: owner.id,
+    const matched = await ownerForCalledNumber(supabase, calledNumber);
+    const existing = await getCallByConversation(supabase, conversation_id);
+    let callId = existing?.id ?? "";
+    let ownerId = existing?.owner_id ?? matched?.id ?? null;
+    if (existing?.owner_id) ownerId = existing.owner_id;
+    if (!existing) {
+      const { data: created, error } = await supabase
+        .from("calls")
+        .insert({
+          owner_id: ownerId,
           conversation_id,
           call_sid: callSid,
           caller_number: callerNumber,
-        },
-        { onConflict: "conversation_id" },
-      )
-      .select("id")
-      .single();
-    if (error) throw new Error(error.message);
+        })
+        .select("id")
+        .single();
+      if (error) throw new Error(error.message);
+      callId = created.id;
+    } else {
+      const { error } = await supabase
+        .from("calls")
+        .update({
+          owner_id: ownerId,
+          call_sid: callSid || existing.call_sid,
+          caller_number: callerNumber || existing.caller_number,
+        })
+        .eq("id", existing.id);
+      if (error) throw new Error(error.message);
+    }
 
-    await insertEvent(supabase, call.id, "system", {
+    const owner = ownerId ? await getOwnerById(supabase, ownerId) : null;
+    const [blocked, known] = owner
+      ? await Promise.all([
+          isNumberBlocked(supabase, owner.id, callerNumber),
+          isKnownContact(supabase, owner.id, callerNumber),
+        ])
+      : [false, false];
+
+    await insertEvent(supabase, callId, "system", {
       step: "init",
       caller_number: callerNumber,
       called_number,
       call_sid: callSid,
       is_blocked: blocked,
       is_known_contact: known,
+      owner_id: owner?.id ?? null,
     });
 
     return json({
       type: "conversation_initiation_client_data",
       dynamic_variables: {
-        owner_name: owner.name,
+        owner_name: owner?.name ?? "the owner of this number",
         caller_number: callerNumber,
         is_blocked: blocked,
         is_known_contact: known,

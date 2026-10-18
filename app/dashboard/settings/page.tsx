@@ -16,7 +16,8 @@ import {
 } from "@/components/styles";
 
 export default function SettingsPage() {
-  const { owner, blocked, saveOwner, addBlocked, removeBlocked } = useSiftDirectory();
+  const { owner, blocked, lineNote, lineStatus, saveOwner, addBlocked, removeBlocked } =
+    useSiftDirectory();
   const [name, setName] = useState(owner.name);
   const [aliases, setAliases] = useState(owner.aliases);
   const [phone, setPhone] = useState(owner.phone);
@@ -25,12 +26,19 @@ export default function SettingsPage() {
   const [blockReason, setBlockReason] = useState("");
   const [note, setNote] = useState("");
   const dirty = useRef(false);
+  const loadedOwner = useRef(owner.id);
 
   useEffect(() => {
-    if (dirty.current) return;
+    if (loadedOwner.current === owner.id && dirty.current) return;
+    loadedOwner.current = owner.id;
+    dirty.current = false;
     setName(owner.name);
     setAliases(owner.aliases);
     setPhone(owner.phone);
+    setAliasDraft("");
+    setBlockNumber("");
+    setBlockReason("");
+    setNote("");
   }, [owner]);
 
   function markDirty() {
@@ -73,13 +81,64 @@ export default function SettingsPage() {
       <p className={pageEyebrow}>Your line</p>
       <h1 className={pageTitle}>Settings</h1>
       <p className={pageSubtitle}>
-        Connected to your account. Changes here are saved in Supabase.
+        Sift texts the phone you already use. The number people call shows up on its own.
       </p>
 
-      <div className="mt-6 grid gap-5 xl:grid-cols-2">
+      <div className={`${cardClass} mt-6`}>
+        <div className="card-body gap-3">
+          {owner.siftNumber ? (
+            <>
+              <h2 className={cardHeading}>Your Sift number</h2>
+              <p className="font-display text-2xl font-bold">{formatPhone(owner.siftNumber)}</p>
+              <p className={metaMuted}>
+                {lineNote ||
+                  "Text this number from your phone once. Sift can reply after that."}
+              </p>
+            </>
+          ) : owner.phone ? (
+            <>
+              <h2 className={cardHeading}>Sift texts you</h2>
+              <p className="font-display text-2xl font-bold">{formatPhone(owner.phone)}</p>
+              <p className={metaMuted}>
+                {lineStatus === "failed"
+                  ? lineNote
+                  : "Sift connects this phone to the shared Photon line. The number to text shows up here."}
+              </p>
+            </>
+          ) : (
+            <form onSubmit={onSave} className="flex flex-col gap-4">
+              <h2 className={cardHeading}>Text me here</h2>
+              <p className={metaMuted}>
+                Use the phone you already have. Sift connects it to the shared Photon line. You do not buy a number.
+              </p>
+              <fieldset className="fieldset">
+                <legend className="fieldset-legend font-bold">Your phone</legend>
+                <input
+                  id="setup-phone"
+                  value={phone}
+                  onChange={(event) => {
+                    markDirty();
+                    setPhone(event.target.value);
+                  }}
+                  placeholder="+12065550100"
+                  className={inputClass}
+                />
+              </fieldset>
+              <button type="submit" className={btnPrimary}>
+                Save my phone
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-5 xl:grid-cols-2">
         <form onSubmit={onSave} className={cardClass}>
           <div className="card-body gap-4">
             <h2 className={cardHeading}>Owner</h2>
+            <p className={metaMuted}>
+              Your name, aliases, and phone are encrypted before they are stored.
+            </p>
             <fieldset className="fieldset">
               <legend className="fieldset-legend font-bold">Name</legend>
               <input
@@ -92,19 +151,21 @@ export default function SettingsPage() {
                 className={inputClass}
               />
             </fieldset>
-            <fieldset className="fieldset">
-              <legend className="fieldset-legend font-bold">Phone</legend>
-              <input
-                id="owner-phone"
-                value={phone}
-                onChange={(event) => {
-                  markDirty();
-                  setPhone(event.target.value);
-                }}
-                placeholder="+12065550100"
-                className={inputClass}
-              />
-            </fieldset>
+            {owner.phone ? (
+              <fieldset className="fieldset">
+                <legend className="fieldset-legend font-bold">Phone</legend>
+                <input
+                  id="owner-phone"
+                  value={phone}
+                  onChange={(event) => {
+                    markDirty();
+                    setPhone(event.target.value);
+                  }}
+                  placeholder="+12065550100"
+                  className={inputClass}
+                />
+              </fieldset>
+            ) : null}
             <div>
               <p className="mb-2 font-bold">Aliases</p>
               <div className="flex flex-wrap gap-2">

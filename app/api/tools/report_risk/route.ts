@@ -32,9 +32,10 @@ export async function POST(req: Request) {
     const call = await getCallByConversation(supabase, conversation_id);
     if (!call) return json({ error: "unknown conversation" }, 404);
 
-    const blocked = call.caller_number
-      ? await isNumberBlocked(supabase, call.caller_number)
-      : false;
+    const blocked =
+      call.owner_id && call.caller_number
+        ? await isNumberBlocked(supabase, call.owner_id, call.caller_number)
+        : false;
     const decision = applyRiskRules({
       reportedScore: score,
       previousScore: call.risk_score ?? 0,

@@ -1,4 +1,7 @@
+import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
+import { sealOwner } from "@/lib/account-crypto";
+import { getOwnerByUserId, normalizePhone } from "@/app/api/tools/db";
 import { createServiceClient } from "@/lib/supabase";
 
 function json(data: unknown, status = 200) {
@@ -38,6 +41,11 @@ export async function POST(req: Request) {
   const record = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
   const email = typeof record.email === "string" ? record.email.trim().toLowerCase() : "";
   const password = typeof record.password === "string" ? record.password : "";
+  const phoneRaw = typeof record.phone === "string" ? record.phone.trim() : "";
+  const ownerPhone = phoneRaw ? normalizePhone(phoneRaw) : "";
+  if (ownerPhone && !ownerPhone.startsWith("+")) {
+    return json({ error: "Enter your phone with the country code, like +12065550100." }, 400);
+  }
   if (!email.includes("@") || password.length < 6) {
     return json(
       { error: "Use an email and a password of at least 6 characters." },
@@ -123,20 +131,55 @@ export async function POST(req: Request) {
     );
   }
 
+  let phoneSaved = false;
   if (!existing.data) {
-    const inserted = await admin.from("owners").insert({
-      user_id: userId,
+    const sealed = sealOwner({
+      id: randomUUID(),
       name: displayName(email),
       aliases: [],
-      phone: process.env.OWNER_PHONE?.trim() || "",
-      imessage_handle: email,
+      phone: ownerPhone,
+      imessage_handle: ownerPhone || email,
+    });
+    const inserted = await admin.from("owners").insert({
+      ...sealed,
+      user_id: userId,
       timezone: "America/Los_Angeles",
     });
     if (inserted.error) return json({ error: inserted.error.message }, 500);
+    phoneSaved = Boolean(ownerPhone);
+  } else if (ownerPhone) {
+    const owner = await getOwnerByUserId(admin, userId);
+    if (owner && !owner.phone.trim()) {
+      const sealed = sealOwner({
+        ...owner,
+        phone: ownerPhone,
+        imessage_handle: ownerPhone,
+      });
+      const updated = await admin
+        .from("owners")
+        .update({
+          phone: sealed.phone,
+          imessage_handle: sealed.imessage_handle,
+        })
+        .eq("id", owner.id);
+      if (updated.error) return json({ error: updated.error.message }, 500);
+      phoneSaved = true;
+    }
   }
 
+  const needsPhone = !ownerPhone && !phoneSaved && !(await savedPhone(admin, userId));
   return json({
     access_token: signed.data.session.access_token,
     refresh_token: signed.data.session.refresh_token,
+    needs_phone: needsPhone,
+    phone_saved: phoneSaved,
   });
+}
+
+async function savedPhone(
+  admin: ReturnType<typeof createServiceClient>,
+  userId: string,
+): Promise<boolean> {
+  const owner = await getOwnerByUserId(admin, userId);
+  return Boolean(owner?.phone.trim());
 }

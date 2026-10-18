@@ -8,11 +8,13 @@ import { verifySecret } from "@/lib/auth";
 import {
   asStringArray,
   getCallByConversation,
-  getOwner,
   insertEvent,
   json,
+  ownerForCall,
+  saveTranscriptTurns,
   serviceClient,
   type CallRow,
+  type TranscriptTurn,
 } from "@/app/api/tools/db";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -59,7 +61,14 @@ async function sendToOwner(
   call: CallRow,
   body: string,
 ) {
-  const owner = await getOwner(supabase);
+  const owner = await ownerForCall(supabase, call);
+  if (!owner) {
+    await insertEvent(supabase, call.id, "action", {
+      step: "summary_skipped",
+      reason: "no matched person",
+    });
+    return;
+  }
   const address = owner.imessage_handle || owner.phone;
   const channel = "imessage";
   let sendError: string | null = null;
@@ -97,6 +106,18 @@ async function finishTranscription(
 
   const transcriptTurns = event.data.transcript ?? [];
   const text = transcriptText(transcriptTurns);
+  const storedTurns: TranscriptTurn[] = transcriptTurns.flatMap((turn) => {
+    const line = turn.message?.trim() ?? "";
+    if (!line) return [];
+    return [
+      {
+        role: turn.role === "agent" ? "agent" : "caller",
+        text: line,
+        timeInCallSecs: turn.time_in_call_secs,
+      } satisfies TranscriptTurn,
+    ];
+  });
+  await saveTranscriptTurns(supabase, call.id, storedTurns);
 
   const decision = classifyCall({
     riskScore: call.risk_score ?? 0,
@@ -132,7 +153,11 @@ async function finishTranscription(
     .update({
       status: "completed",
       ended_at: new Date().toISOString(),
-      transcript: null,
+      transcript: storedTurns.map((turn) => ({
+        role: turn.role,
+        message: turn.text,
+        time_in_call_secs: turn.timeInCallSecs ?? null,
+      })),
       summary,
       classification: decision.classification,
       action: decision.action,
@@ -140,12 +165,12 @@ async function finishTranscription(
     .eq("id", call.id);
   if (error) throw new Error(error.message);
 
-  if (isScam && call.caller_number) {
+  if (isScam && call.caller_number && call.owner_id) {
     const reason =
       asStringArray(call.risk_reasons).join("; ") || "Classified as a scam";
     const { error: blockError } = await supabase.from("blocked_numbers").upsert(
-      { number: call.caller_number, reason },
-      { onConflict: "number" },
+      { number: call.caller_number, reason, owner_id: call.owner_id },
+      { onConflict: "owner_id,number" },
     );
     if (blockError) throw new Error(blockError.message);
   }

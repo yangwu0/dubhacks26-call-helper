@@ -1,13 +1,13 @@
 import { verifyCallerTargetRequestSchema } from "@/lib/contracts";
+import { fuzzyMatchName } from "@/app/api/tools/match";
 import {
   getCallByConversation,
-  getOwner,
   insertEvent,
   json,
+  ownerForCall,
   rejectIfUnauthorized,
   serviceClient,
 } from "@/app/api/tools/db";
-import { fuzzyMatchName } from "@/app/api/tools/match";
 
 export async function POST(req: Request) {
   const unauthorized = rejectIfUnauthorized(req);
@@ -27,17 +27,13 @@ export async function POST(req: Request) {
 
   try {
     const supabase = serviceClient();
-    const [owner, call] = await Promise.all([
-      getOwner(supabase),
-      getCallByConversation(supabase, conversation_id),
-    ]);
+    const call = await getCallByConversation(supabase, conversation_id);
     if (!call) return json({ error: "unknown conversation" }, 404);
 
-    const result = fuzzyMatchName(
-      claimed_target,
-      owner.name,
-      owner.aliases ?? [],
-    );
+    const owner = await ownerForCall(supabase, call);
+    const result = owner
+      ? fuzzyMatchName(claimed_target, owner.name, owner.aliases ?? [])
+      : { match: false, confidence: 0, matchedAgainst: null };
 
     const { error } = await supabase
       .from("calls")
@@ -54,6 +50,7 @@ export async function POST(req: Request) {
       match: result.match,
       confidence: result.confidence,
       matched_against: result.matchedAgainst,
+      owner_id: owner?.id ?? null,
     });
 
     return json({ match: result.match, confidence: result.confidence });

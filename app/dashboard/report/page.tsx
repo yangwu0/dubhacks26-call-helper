@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { minutesBetween } from "@/components/format";
 import { useSiftDirectory } from "@/components/sift-provider";
+import { getOptionalBrowserClient } from "@/components/supabase-browser";
 import {
   bodyMuted,
   btnPrimary,
@@ -44,6 +45,13 @@ function statsFromCalls(calls: CallRecord[]): Stats {
   };
 }
 
+async function authHeaders(): Promise<HeadersInit> {
+  const supabase = getOptionalBrowserClient();
+  const session = supabase ? await supabase.auth.getSession() : null;
+  const token = session?.data.session?.access_token;
+  return token ? { authorization: `Bearer ${token}` } : {};
+}
+
 function numberFrom(record: Record<string, unknown>, keys: string[]): number | null {
   for (const key of keys) {
     const value = record[key];
@@ -64,7 +72,9 @@ export default function ReportPage() {
     let cancelled = false;
     async function load() {
       try {
-        const response = await fetch("/api/report/weekly");
+        const response = await fetch("/api/report/weekly", {
+          headers: await authHeaders(),
+        });
         if (!response.ok) return;
         const json: unknown = await response.json();
         if (!json || typeof json !== "object" || cancelled) return;
@@ -99,7 +109,10 @@ export default function ReportPage() {
     setSending(true);
     setSendNote("");
     try {
-      const response = await fetch("/api/report/weekly", { method: "POST" });
+      const response = await fetch("/api/report/weekly", {
+        method: "POST",
+        headers: await authHeaders(),
+      });
       setSendNote(response.ok ? "Sent to your phone." : "The report is not ready to send yet.");
     } catch {
       setSendNote("The report is not ready to send yet.");

@@ -42,6 +42,7 @@ export type OwnerProfile = {
   name: string;
   aliases: string[];
   phone: string;
+  siftNumber: string;
 };
 
 export type BlockedNumber = {
@@ -139,6 +140,7 @@ export const MOCK_OWNER: OwnerProfile = {
   name: "Alex Kim",
   aliases: ["Alex", "Alexander Kim"],
   phone: "+12065550100",
+  siftNumber: "",
 };
 
 export const MOCK_BLOCKED: BlockedNumber[] = [

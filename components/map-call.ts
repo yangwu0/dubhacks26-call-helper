@@ -28,11 +28,59 @@ function payloadRecord(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
+function transcriptLine(
+  id: string,
+  role: unknown,
+  body: unknown,
+  at: unknown,
+): TranscriptLine | null {
+  const line = text(body).trim();
+  if (!line) return null;
+  return {
+    id,
+    role: role === "agent" ? "agent" : "caller",
+    text: line,
+    at: text(at),
+  };
+}
+
+function transcriptFromEvents(events: EventRow[]): TranscriptLine[] {
+  const lines: TranscriptLine[] = [];
+  for (const event of events) {
+    if (event.type !== "transcript") continue;
+    const payload = payloadRecord(event.payload);
+    const line = transcriptLine(
+      String(event.id ?? lines.length),
+      payload.role,
+      text(payload.text) || text(payload.message),
+      event.created_at,
+    );
+    if (line) lines.push(line);
+  }
+  return lines;
+}
+
+function transcriptFromRow(value: unknown): TranscriptLine[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item, index) => {
+    if (!item || typeof item !== "object") return [];
+    const record = item as Record<string, unknown>;
+    const line = transcriptLine(
+      text(record.id, `stored-${index}`),
+      record.role,
+      text(record.message) || text(record.text),
+      record.at,
+    );
+    return line ? [line] : [];
+  });
+}
+
 export function mapCall(row: Record<string, unknown>, events: EventRow[] = []): CallRecord {
   const id = text(row.id);
   const related = events.filter((event) => event.call_id === id);
-  // Transcripts are not persisted; live demo uses mock data only.
-  const transcript: TranscriptLine[] = [];
+  const fromEvents = transcriptFromEvents(related);
+  const fromRow = transcriptFromRow(row.transcript);
+  const transcript = fromEvents.length >= fromRow.length ? fromEvents : fromRow;
 
   const riskTimeline: RiskPoint[] = [];
   for (const event of related) {
@@ -98,6 +146,7 @@ export function mapOwner(row: Record<string, unknown>): OwnerProfile {
     name: text(row.name),
     aliases: stringList(row.aliases),
     phone: text(row.phone),
+    siftNumber: text(row.sift_number),
   };
 }
 

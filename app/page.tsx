@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import { SiftLogo } from "@/components/sift-logo";
 import { getOptionalBrowserClient } from "@/components/supabase-browser";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -11,20 +11,9 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
-
-  useEffect(() => {
-    const supabase = getOptionalBrowserClient();
-    if (!supabase) return;
-    let cancelled = false;
-    void supabase.auth.getSession().then(({ data }) => {
-      if (!cancelled && data.session) router.replace("/dashboard");
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [router]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -39,7 +28,7 @@ export default function LoginPage() {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, phone }),
       });
       const json: unknown = await response.json().catch(() => null);
       const message =
@@ -50,11 +39,17 @@ export default function LoginPage() {
         setError(message || "Could not sign in.");
         return;
       }
-      const tokens = json as { access_token?: string; refresh_token?: string };
+      const tokens = json as {
+        access_token?: string;
+        refresh_token?: string;
+        needs_phone?: boolean;
+        phone_saved?: boolean;
+      };
       if (!tokens.access_token || !tokens.refresh_token) {
         setError("Sign-in did not return a session.");
         return;
       }
+      await supabase.auth.signOut({ scope: "local" });
       const { error: sessionError } = await supabase.auth.setSession({
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token,
@@ -63,7 +58,7 @@ export default function LoginPage() {
         setError(sessionError.message);
         return;
       }
-      router.push("/dashboard");
+      router.push(tokens.needs_phone || tokens.phone_saved ? "/dashboard/settings" : "/dashboard");
     } catch {
       setError("Could not reach Sift.");
     } finally {
@@ -117,6 +112,22 @@ export default function LoginPage() {
                 placeholder="you@example.com"
                 className={inputClass}
               />
+            </fieldset>
+            <fieldset className="fieldset">
+              <legend className="fieldset-legend font-bold">Phone</legend>
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                autoComplete="tel"
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
+                placeholder="+12065550100"
+                className={inputClass}
+              />
+              <p className="text-sm text-base-content/65">
+                Sift texts this phone. Leave it blank if this account already has one.
+              </p>
             </fieldset>
             <fieldset className="fieldset">
               <legend className="fieldset-legend font-bold">Password</legend>

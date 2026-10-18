@@ -37,13 +37,17 @@ export const photonVoice: VoiceProvider = {
     );
   },
   async callOwner(input: CallOwnerInput) {
+    const toNumber = input.toNumber?.trim() || required("OWNER_PHONE");
+    if (!toNumber.startsWith("+")) {
+      throw new Error("Owner phone must be E.164, including the leading +");
+    }
     const client = new ElevenLabsClient({
       apiKey: required("ELEVENLABS_API_KEY"),
     });
     await client.conversationalAi.sipTrunk.outboundCall({
       agentId: required("ELEVENLABS_AGENT_ID"),
       agentPhoneNumberId: required("ELEVENLABS_PHONE_NUMBER_ID"),
-      toNumber: required("OWNER_PHONE"),
+      toNumber,
       telephonyCallConfig: { ringingTimeoutSecs: RING_SECONDS },
       conversationInitiationClientData: {
         conversationConfigOverride: {

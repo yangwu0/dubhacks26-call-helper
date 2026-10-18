@@ -316,6 +316,7 @@ async function main() {
     .from("blocked_numbers")
     .select("number, reason")
     .eq("number", "+18005550999")
+    .limit(1)
     .maybeSingle();
   if (blocked.error) throw new Error(blocked.error.message);
   console.log("blocked", JSON.stringify(blocked.data));

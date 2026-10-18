@@ -2,20 +2,48 @@
 
 import { ActionBadge, badgeForCall } from "@/components/action-badge";
 import { CallStrip } from "@/components/call-strip";
+import { DemoToggle } from "@/components/demo-toggle";
 import { formatPhone } from "@/components/format";
 import { LiveTranscript } from "@/components/live-transcript";
 import { RiskGauge } from "@/components/risk-gauge";
 import { useSiftDirectory } from "@/components/sift-provider";
+import { useDemoPlayback } from "@/components/use-demo-playback";
 import {
   bodyMuted,
   cardClass,
   labelCaps,
+  metaMuted,
   pageEyebrow,
   pageTitle,
   riskPill,
   sectionTitle,
 } from "@/components/styles";
-import type { RoutingStatus, TranscriptLine } from "@/lib/mockCallData";
+import type { CallRecord, RoutingStatus, TranscriptLine } from "@/lib/mockCallData";
+import { useState } from "react";
+
+function LiveCallButton({
+  call,
+  selected,
+  onSelect,
+}: {
+  call: CallRecord;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  const label = call.callerName && call.callerName !== "Unknown caller"
+    ? call.callerName
+    : formatPhone(call.callerNumber);
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={selected}
+      className={`btn btn-sm font-semibold ${selected ? "btn-primary" : "btn-ghost"}`}
+    >
+      {label || "Live call"}
+    </button>
+  );
+}
 
 function NameCheck({ match }: { match: boolean | null }) {
   if (match === true) {
@@ -31,25 +59,53 @@ function NameCheck({ match }: { match: boolean | null }) {
 
 export default function LivePage() {
   const { calls } = useSiftDirectory();
-  const live = calls.find((call) => call.status === "in_progress") ?? null;
-  const showingLive = live !== null;
+  const demo = useDemoPlayback();
+  const liveCalls = calls.filter((call) => call.status === "in_progress");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const live = demo.engaged
+    ? null
+    : (liveCalls.find((call) => call.id === selectedId) ?? liveCalls[0] ?? null);
+  const showingLive = demo.engaged || live !== null;
 
-  const score = live?.riskScore ?? 0;
-  const reasons = live?.riskReasons ?? [];
-  const status: RoutingStatus = live ? badgeForCall(live) : "waiting";
-  const lines: TranscriptLine[] = live?.transcript ?? [];
-  const callerName = live?.callerName ?? "No call right now";
-  const callerNumber = live?.callerNumber ?? "";
-  const claimedTarget = live?.claimedTarget ?? "";
-  const targetMatch = live?.targetMatch ?? null;
-  const intent = live?.callerIntent ?? "";
+  const score = demo.engaged ? demo.score : (live?.riskScore ?? 0);
+  const reasons = demo.engaged ? demo.reasons : (live?.riskReasons ?? []);
+  const status: RoutingStatus = demo.engaged
+    ? demo.action
+    : live
+      ? badgeForCall(live)
+      : "waiting";
+  const lines: TranscriptLine[] = demo.engaged ? demo.lines : (live?.transcript ?? []);
+  const callerName = demo.engaged
+    ? demo.callerName || "Sample caller"
+    : (live?.callerName ?? "No call right now");
+  const callerNumber = demo.engaged ? demo.callerNumber : (live?.callerNumber ?? "");
+  const claimedTarget = demo.engaged ? demo.claimedTarget : (live?.claimedTarget ?? "");
+  const targetMatch = demo.engaged ? demo.targetMatch : (live?.targetMatch ?? null);
+  const intent = demo.engaged ? "" : (live?.callerIntent ?? "");
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <p className={pageEyebrow}>Right now</p>
-        <h1 className={pageTitle}>Live</h1>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className={pageEyebrow}>Right now</p>
+          <h1 className={pageTitle}>Live</h1>
+        </div>
+        <DemoToggle running={demo.running} onToggle={demo.toggle} />
       </div>
+      {demo.engaged ? (
+        <p className={metaMuted}>Sample scam call. Nothing here is a real caller.</p>
+      ) : liveCalls.length > 1 ? (
+        <div className="flex flex-wrap gap-2" aria-label="Calls happening now">
+          {liveCalls.map((call) => (
+            <LiveCallButton
+              key={call.id}
+              call={call}
+              selected={call.id === live?.id}
+              onSelect={() => setSelectedId(call.id)}
+            />
+          ))}
+        </div>
+      ) : null}
 
       <div className="grid items-stretch gap-5 lg:grid-cols-2">
         <section className={`${cardClass} bg-base-100`}>

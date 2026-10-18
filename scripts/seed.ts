@@ -1,3 +1,4 @@
+import { sealOwner } from "../lib/account-crypto";
 import { createServiceClient } from "../lib/supabase";
 
 const OWNER_ID = "a1e00000-0000-4000-8000-000000000001";
@@ -21,11 +22,13 @@ async function main() {
 
   const owner = await supabase.from("owners").upsert(
     {
-      id: OWNER_ID,
-      name: "Alex Kim",
-      aliases: ["Alex", "Alexander Kim"],
-      phone: ownerPhone,
-      imessage_handle: ownerPhone,
+      ...sealOwner({
+        id: OWNER_ID,
+        name: "Alex Kim",
+        aliases: ["Alex", "Alexander Kim"],
+        phone: ownerPhone,
+        imessage_handle: ownerPhone,
+      }),
       timezone: "America/Los_Angeles",
     },
     { onConflict: "id" },
@@ -34,26 +37,28 @@ async function main() {
 
   const contacts = await supabase.from("contacts").upsert(
     [
-      { number: "+12065551001", name: "Jordan Lee", trusted: true },
-      { number: "+12065551002", name: "Priya Shah", trusted: true },
-      { number: "+12065551003", name: "Sam Ortiz", trusted: true },
+      { owner_id: OWNER_ID, number: "+12065551001", name: "Jordan Lee", trusted: true },
+      { owner_id: OWNER_ID, number: "+12065551002", name: "Priya Shah", trusted: true },
+      { owner_id: OWNER_ID, number: "+12065551003", name: "Sam Ortiz", trusted: true },
     ],
-    { onConflict: "number" },
+    { onConflict: "owner_id,number" },
   );
   assertOk(contacts.error, "contacts");
 
   const blocked = await supabase.from("blocked_numbers").upsert(
     [
       {
+        owner_id: OWNER_ID,
         number: "+18005550199",
         reason: "IRS impersonation. Demanded gift cards.",
       },
       {
+        owner_id: OWNER_ID,
         number: "+18005550288",
         reason: "Extended warranty scam. Asked for remote access.",
       },
     ],
-    { onConflict: "number" },
+    { onConflict: "owner_id,number" },
   );
   assertOk(blocked.error, "blocked_numbers");
 

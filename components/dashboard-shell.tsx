@@ -4,7 +4,9 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { MotionConfig } from "framer-motion";
 import { Suspense, type ReactNode } from "react";
+import { formatPhone } from "@/components/format";
 import { SiftLogo } from "@/components/sift-logo";
+import { useSiftDirectory } from "@/components/sift-provider";
 import { getOptionalBrowserClient } from "@/components/supabase-browser";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -70,6 +72,8 @@ function SignOut() {
 }
 
 export function DashboardShell({ children }: { children: ReactNode }) {
+  const { owner } = useSiftDirectory();
+
   return (
     <MotionConfig reducedMotion="user">
       <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-5 sm:px-6 lg:px-8">
@@ -80,7 +84,11 @@ export function DashboardShell({ children }: { children: ReactNode }) {
                 <SiftLogo size="md" />
                 <span className="hidden sm:block">
                   <span className="font-display block text-lg font-bold leading-none mt-2">Sift</span>
-                  <span className="text-xs text-base-content/70">Looking out for your line</span>
+                  <span className="text-xs text-base-content/70">
+                    {owner.siftNumber
+                      ? formatPhone(owner.siftNumber)
+                      : owner.name || "Looking out for your line"}
+                  </span>
                 </span>
               </Link>
             </div>
