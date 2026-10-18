@@ -5,7 +5,7 @@ import {
   insertEvent,
   ownerForCalledNumber,
   isKnownContact,
-  isNumberBlocked,
+  isNumberFlagged,
   json,
   normalizePhone,
   rejectIfUnauthorized,
@@ -69,9 +69,9 @@ export async function POST(req: Request) {
     }
 
     const owner = ownerId ? await getOwnerById(supabase, ownerId) : null;
-    const [blocked, known] = owner
+    const [flagged, known] = owner
       ? await Promise.all([
-          isNumberBlocked(supabase, owner.id, callerNumber),
+          isNumberFlagged(supabase, owner.id, callerNumber),
           isKnownContact(supabase, owner.id, callerNumber),
         ])
       : [false, false];
@@ -81,7 +81,7 @@ export async function POST(req: Request) {
       caller_number: callerNumber,
       called_number,
       call_sid: callSid,
-      is_blocked: blocked,
+      is_blocked: flagged,
       is_known_contact: known,
       owner_id: owner?.id ?? null,
     });
@@ -91,7 +91,7 @@ export async function POST(req: Request) {
       dynamic_variables: {
         owner_name: owner?.name ?? "this number",
         caller_number: callerNumber,
-        is_blocked: blocked,
+        is_blocked: flagged,
         is_known_contact: known,
         call_sid: callSid,
       },

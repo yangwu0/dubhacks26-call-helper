@@ -1,5 +1,5 @@
 import type {
-  BlockedNumber,
+  FlaggedNumber,
   CallRecord,
   OwnerProfile,
   RiskPoint,
@@ -105,7 +105,8 @@ export function mapCall(row: Record<string, unknown>, events: EventRow[] = []): 
     });
   }
 
-  const status = row.status === "in_progress" ? "in_progress" : "completed";
+  const endedAt = text(row.ended_at) || null;
+  const status = endedAt ? "completed" : "in_progress";
   const classification =
     row.classification === "scam" ||
     row.classification === "legit_important" ||
@@ -124,19 +125,17 @@ export function mapCall(row: Record<string, unknown>, events: EventRow[] = []): 
     id,
     callerNumber: text(row.caller_number),
     callerName: text(row.caller_name, "Unknown caller"),
-    claimedTarget: text(row.claimed_target),
     targetMatch: typeof row.target_match === "boolean" ? row.target_match : null,
     status,
     classification,
     riskScore,
     riskReasons,
-    callerIntent: text(row.caller_intent),
     action,
     summary: text(row.summary),
     transcript,
     riskTimeline,
     startedAt: text(row.started_at),
-    endedAt: text(row.ended_at) || null,
+    endedAt,
   };
 }
 
@@ -146,11 +145,11 @@ export function mapOwner(row: Record<string, unknown>): OwnerProfile {
     name: text(row.name),
     aliases: stringList(row.aliases),
     phone: text(row.phone),
-    siftNumber: text(row.sift_number),
+    photonNumber: text(row.photon_number),
   };
 }
 
-export function mapBlocked(row: Record<string, unknown>): BlockedNumber {
+export function mapFlagged(row: Record<string, unknown>): FlaggedNumber {
   return {
     number: text(row.number),
     reason: text(row.reason),

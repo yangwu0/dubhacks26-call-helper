@@ -15,7 +15,7 @@ export type OwnerLine = {
 
 type OwnerLineRow = {
   id: string;
-  sift_number: string | null;
+  photon_number: string | null;
 };
 
 const VOICE_MESSAGE =
@@ -36,7 +36,7 @@ export async function ensureOwnerLine(
 ): Promise<OwnerLine> {
   const { data, error } = await supabase
     .from("owners")
-    .select("id, sift_number")
+    .select("id, photon_number")
     .eq("id", ownerId)
     .maybeSingle();
   if (error) throw new Error(error.message);
@@ -47,15 +47,14 @@ export async function ensureOwnerLine(
   if (!voiceNumber) {
     return {
       status: "unconfigured",
-      number: owner.sift_number ?? "",
+      number: owner.photon_number ?? "",
       message: "Photon has no calling number yet.",
     };
   }
 
-  if (owner.sift_number !== voiceNumber) {
+  if (owner.photon_number !== voiceNumber) {
     await remember(supabase, owner.id, {
-      sift_number: voiceNumber,
-      photon_line_error: null,
+      photon_number: voiceNumber,
     });
   }
   return { status: "ready", number: voiceNumber, message: VOICE_MESSAGE };

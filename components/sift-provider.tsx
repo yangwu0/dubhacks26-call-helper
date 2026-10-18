@@ -9,21 +9,21 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { mapBlocked, mapCall, mapOwner } from "@/components/map-call";
+import { mapCall, mapFlagged, mapOwner } from "@/components/map-call";
 import { getOptionalBrowserClient } from "@/components/supabase-browser";
-import type { BlockedNumber, CallRecord, OwnerProfile } from "@/lib/mockCallData";
+import type { CallRecord, FlaggedNumber, OwnerProfile } from "@/lib/mockCallData";
 
 type SaveResult = { ok: boolean; message: string };
 
 type SiftDirectory = {
   calls: CallRecord[];
   owner: OwnerProfile;
-  blocked: BlockedNumber[];
+  flagged: FlaggedNumber[];
   lineNote: string;
   lineStatus: "" | "ready" | "pending" | "failed" | "unconfigured";
   saveOwner: (next: OwnerProfile) => Promise<SaveResult>;
-  addBlocked: (number: string, reason: string) => Promise<SaveResult>;
-  removeBlocked: (number: string) => Promise<SaveResult>;
+  addFlagged: (number: string, reason: string) => Promise<SaveResult>;
+  removeFlagged: (number: string) => Promise<SaveResult>;
 };
 
 type EventRow = {
@@ -39,13 +39,13 @@ const EMPTY_OWNER: OwnerProfile = {
   name: "",
   aliases: [],
   phone: "",
-  siftNumber: "",
+  photonNumber: "",
 };
 
 const SiftContext = createContext<SiftDirectory | null>(null);
 
 function schemaHint(message: string) {
-  if (/schema cache|could not find the table|does not exist|user_id/i.test(message)) {
+  if (/schema cache|could not find the table|does not exist/i.test(message)) {
     return "Supabase is connected, but the Sift tables are not there yet. Run the database migration, then reload.";
   }
   return message;
@@ -55,7 +55,7 @@ export function SiftProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [calls, setCalls] = useState<CallRecord[]>([]);
   const [owner, setOwner] = useState<OwnerProfile>(EMPTY_OWNER);
-  const [blocked, setBlocked] = useState<BlockedNumber[]>([]);
+  const [flagged, setFlagged] = useState<FlaggedNumber[]>([]);
   const [lineNote, setLineNote] = useState("");
   const [lineStatus, setLineStatus] = useState<SiftDirectory["lineStatus"]>("");
   const [phase, setPhase] = useState<"loading" | "ready" | "error">("loading");
@@ -90,7 +90,7 @@ export function SiftProvider({ children }: { children: ReactNode }) {
         name?: unknown;
         aliases?: unknown;
         phone?: unknown;
-        siftNumber?: unknown;
+        photonNumber?: unknown;
         error?: unknown;
       } | null;
       if (cancelled || current !== request) return;
@@ -109,16 +109,16 @@ export function SiftProvider({ children }: { children: ReactNode }) {
         name: accountBody.name,
         aliases: accountBody.aliases,
         phone: accountBody.phone,
-        sift_number: accountBody.siftNumber,
+        photon_number: accountBody.photonNumber,
       });
-      const [callsRes, blockedRes] = await Promise.all([
+      const [callsRes, flaggedRes] = await Promise.all([
         supabase
           .from("calls")
           .select("*")
           .eq("owner_id", nextOwner.id)
           .order("started_at", { ascending: false }),
         supabase
-          .from("blocked_numbers")
+          .from("flagged_numbers")
           .select("*")
           .eq("owner_id", nextOwner.id)
           .order("created_at", { ascending: false }),
@@ -129,8 +129,8 @@ export function SiftProvider({ children }: { children: ReactNode }) {
         setPhase("error");
         return;
       }
-      if (blockedRes.error) {
-        setError(schemaHint(blockedRes.error.message));
+      if (flaggedRes.error) {
+        setError(schemaHint(flaggedRes.error.message));
         setPhase("error");
         return;
       }
@@ -159,9 +159,9 @@ export function SiftProvider({ children }: { children: ReactNode }) {
       setCalls(
         callRows.map((row) => mapCall(row as Record<string, unknown>, events)),
       );
-      setBlocked(
-        (blockedRes.data ?? []).map((row) =>
-          mapBlocked(row as Record<string, unknown>),
+      setFlagged(
+        (flaggedRes.data ?? []).map((row) =>
+          mapFlagged(row as Record<string, unknown>),
         ),
       );
       setError("");
@@ -172,7 +172,7 @@ export function SiftProvider({ children }: { children: ReactNode }) {
 
     function clearAccount() {
       setCalls([]);
-      setBlocked([]);
+      setFlagged([]);
       setOwner(EMPTY_OWNER);
       setLineNote("");
       setLineStatus("");
@@ -277,7 +277,7 @@ export function SiftProvider({ children }: { children: ReactNode }) {
       );
       if (number) {
         setOwner((current) =>
-          current.id === owner.id ? { ...current, siftNumber: number } : current,
+          current.id === owner.id ? { ...current, photonNumber: number } : current,
         );
         return;
       }
@@ -293,13 +293,13 @@ export function SiftProvider({ children }: { children: ReactNode }) {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [owner.id, owner.siftNumber]);
+  }, [owner.id, owner.photonNumber]);
 
   const value = useMemo<SiftDirectory>(() => {
     return {
       calls,
       owner,
-      blocked,
+      flagged,
       lineNote,
       lineStatus,
       async saveOwner(next) {
@@ -340,41 +340,41 @@ export function SiftProvider({ children }: { children: ReactNode }) {
         const message = body && typeof body.message === "string" ? body.message : "Saved.";
         return { ok: true, message };
       },
-      async addBlocked(number, reason) {
-        const entry: BlockedNumber = {
+      async addFlagged(number, reason) {
+        const entry: FlaggedNumber = {
           number,
           reason,
           createdAt: new Date().toISOString(),
         };
-        setBlocked((current) => [
+        setFlagged((current) => [
           entry,
           ...current.filter((item) => item.number !== number),
         ]);
         const supabase = getOptionalBrowserClient();
-        if (!supabase || !owner.id) return { ok: false, message: "Sign in again before blocking." };
-        const { error: blockError } = await supabase.from("blocked_numbers").upsert(
+        if (!supabase || !owner.id) return { ok: false, message: "Sign in again before flagging." };
+        const { error: flagError } = await supabase.from("flagged_numbers").upsert(
           { number, reason, owner_id: owner.id },
           { onConflict: "owner_id,number" },
         );
-        if (blockError) return { ok: false, message: "Couldn't block that number." };
-        return { ok: true, message: "Number blocked." };
+        if (flagError) return { ok: false, message: "Couldn't flag that number." };
+        return { ok: true, message: "Number flagged." };
       },
-      async removeBlocked(number) {
-        setBlocked((current) => current.filter((item) => item.number !== number));
+      async removeFlagged(number) {
+        setFlagged((current) => current.filter((item) => item.number !== number));
         const supabase = getOptionalBrowserClient();
         if (!supabase || !owner.id) {
-          return { ok: false, message: "Sign in again before unblocking." };
+          return { ok: false, message: "Sign in again before unflagging." };
         }
         const { error: removeError } = await supabase
-          .from("blocked_numbers")
+          .from("flagged_numbers")
           .delete()
           .eq("owner_id", owner.id)
           .eq("number", number);
-        if (removeError) return { ok: false, message: "Couldn't unblock that number." };
-        return { ok: true, message: "Number unblocked." };
+        if (removeError) return { ok: false, message: "Couldn't unflag that number." };
+        return { ok: true, message: "Number unflagged." };
       },
     };
-  }, [blocked, calls, lineNote, lineStatus, owner]);
+  }, [flagged, calls, lineNote, lineStatus, owner]);
 
   return (
     <SiftContext.Provider value={value}>

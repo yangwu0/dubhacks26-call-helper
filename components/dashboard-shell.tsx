@@ -77,8 +77,8 @@ export function DashboardShell({ children }: { children: ReactNode }) {
                 <span>
                   <span className="font-display block text-lg font-bold leading-none">Sift</span>
                   <span className="mt-1 hidden text-xs text-base-content/70 md:block">
-                    {owner.siftNumber
-                      ? formatPhone(owner.siftNumber)
+                    {owner.photonNumber
+                      ? formatPhone(owner.photonNumber)
                       : owner.name || "Looking out for your line"}
                   </span>
                 </span>

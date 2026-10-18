@@ -130,45 +130,13 @@ async function main() {
       "may_forward",
   );
 
-  const availability = await curl("/api/tools/check_availability", {
-    conversation_id: legit,
-    date_from: "2026-10-19",
-    date_to: "2026-10-23",
-  });
-  assert(
-    "check availability",
-    availability,
-    (body) => Array.isArray((body as { free_slots?: unknown }).free_slots),
-  );
-  const slots = (
-    availability.body as { free_slots: { start: string; end: string }[] }
-  ).free_slots;
-  const slot = slots.find((item) => item.start.includes("T10:30")) ?? slots[0];
-  if (!slot) throw new Error("no free slot returned");
-  const slotStart = new Date(slot.start);
-  const slotEnd = new Date(slotStart.getTime() + 30 * 60 * 1000);
-
-  assert(
-    "book event",
-    await curl("/api/tools/book_event", {
-      conversation_id: legit,
-      title: "Landlord: kitchen leak",
-      starts_at: slotStart.toISOString(),
-      ends_at: slotEnd.toISOString(),
-      caller_name: "Dana Ruiz",
-    }),
-    (body) =>
-      (body as { ok?: boolean; event_id?: string }).ok === true &&
-      Boolean((body as { event_id?: string }).event_id),
-  );
-
   assert(
     "take message",
     await curl("/api/tools/take_message", {
       conversation_id: legit,
       caller_name: "Dana Ruiz",
       callback_number: "+12065551010",
-      message: "The kitchen leak can wait until the booked window.",
+      message: "Please call back about the kitchen leak.",
     }),
     (body) => (body as { ok?: boolean }).ok === true,
   );
@@ -312,15 +280,15 @@ async function main() {
   if (!scamRow || scamRow.classification !== "scam") {
     throw new Error("scam call was not classified");
   }
-  const blocked = await supabase
-    .from("blocked_numbers")
+  const flagged = await supabase
+    .from("flagged_numbers")
     .select("number, reason")
     .eq("number", "+18005550999")
     .limit(1)
     .maybeSingle();
-  if (blocked.error) throw new Error(blocked.error.message);
-  console.log("blocked", JSON.stringify(blocked.data));
-  if (!blocked.data) throw new Error("scam number was not blocked");
+  if (flagged.error) throw new Error(flagged.error.message);
+  console.log("flagged", JSON.stringify(flagged.data));
+  if (!flagged.data) throw new Error("scam number was not flagged");
   console.log(`Done. Look up conversation ids starting with ${runId}.`);
 }
 

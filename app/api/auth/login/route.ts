@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { sealOwner } from "@/lib/account-crypto";
 import { getOwnerByUserId, normalizePhone } from "@/app/api/tools/db";
@@ -115,7 +114,7 @@ export async function POST(req: Request) {
   const existing = await admin
     .from("owners")
     .select("id")
-    .eq("user_id", userId)
+    .eq("id", userId)
     .maybeSingle();
   if (existing.error) {
     const missing = /schema cache|could not find the table|does not exist/i.test(
@@ -134,15 +133,13 @@ export async function POST(req: Request) {
   let phoneSaved = false;
   if (!existing.data) {
     const sealed = sealOwner({
-      id: randomUUID(),
+      id: userId,
       name: displayName(email),
       aliases: [],
       phone: ownerPhone,
-      imessage_handle: ownerPhone || email,
     });
     const inserted = await admin.from("owners").insert({
       ...sealed,
-      user_id: userId,
       timezone: "America/Los_Angeles",
     });
     if (inserted.error) return json({ error: inserted.error.message }, 500);
@@ -153,13 +150,11 @@ export async function POST(req: Request) {
       const sealed = sealOwner({
         ...owner,
         phone: ownerPhone,
-        imessage_handle: ownerPhone,
       });
       const updated = await admin
         .from("owners")
         .update({
           phone: sealed.phone,
-          imessage_handle: sealed.imessage_handle,
         })
         .eq("id", owner.id);
       if (updated.error) return json({ error: updated.error.message }, 500);

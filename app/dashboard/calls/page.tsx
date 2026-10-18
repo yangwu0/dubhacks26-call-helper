@@ -39,7 +39,7 @@ export default function CallsPage() {
                   <p className={`mt-2 ${metaMuted}`}>
                     {actionText(call.action, call.status)} · {formatWhen(call.startedAt)}
                   </p>
-                  {call.callerIntent ? <p className={`mt-1 truncate ${metaMuted}`}>{call.callerIntent}</p> : null}
+                  {call.summary ? <p className={`mt-1 truncate ${metaMuted}`}>{call.summary}</p> : null}
                 </Link>
               </li>
             );
@@ -80,7 +80,7 @@ export default function CallsPage() {
                           >
                             {call.callerName || "Unknown"}
                           </Link>
-                          <p className={metaMuted}>{call.callerIntent}</p>
+                          <p className={metaMuted}>{call.summary}</p>
                         </td>
                         <td className="text-base-content/70">{formatPhone(call.callerNumber)}</td>
                         <td>

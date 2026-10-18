@@ -21,7 +21,7 @@ import {
 function CallDetailInner() {
   const params = useParams<{ id: string }>();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
-  const { calls, blocked, addBlocked, removeBlocked } = useSiftDirectory();
+  const { calls, flagged, addFlagged, removeFlagged } = useSiftDirectory();
   const call = calls.find((item) => item.id === id);
   const [note, setNote] = useState("");
   const [pending, setPending] = useState(false);
@@ -37,15 +37,15 @@ function CallDetailInner() {
     );
   }
 
-  const isBlocked = blocked.some((item) => item.number === call.callerNumber);
+  const isFlagged = flagged.some((item) => item.number === call.callerNumber);
   const tone = riskTone(call.riskScore);
 
-  async function onToggleBlock() {
+  async function onToggleFlag() {
     if (!call) return;
     setPending(true);
-    const result = isBlocked
-      ? await removeBlocked(call.callerNumber)
-      : await addBlocked(call.callerNumber, call.summary || "Blocked from the dashboard");
+    const result = isFlagged
+      ? await removeFlagged(call.callerNumber)
+      : await addFlagged(call.callerNumber, call.summary || "Flagged from the dashboard");
     setNote(result.message);
     setPending(false);
   }
@@ -74,14 +74,10 @@ function CallDetailInner() {
           </h2>
           <p className={`mt-3 ${bodyMuted}`}>
             {call.summary ||
-              call.callerIntent ||
               (call.status === "in_progress"
                 ? "Sift is on the line."
                 : "No summary for this call yet.")}
           </p>
-          {call.classification !== "scam" && call.callerIntent && call.summary !== call.callerIntent ? (
-            <p className={`mt-3 ${metaMuted}`}>Also noted: {call.callerIntent}</p>
-          ) : null}
         </div>
       </section>
 
@@ -112,11 +108,11 @@ function CallDetailInner() {
           </p>
           <button
             type="button"
-            onClick={onToggleBlock}
+            onClick={onToggleFlag}
             disabled={pending || !call.callerNumber}
-            className={isBlocked ? btnSafe : btnDanger}
+            className={isFlagged ? btnSafe : btnDanger}
           >
-            {isBlocked ? "Unblock number" : "Block number"}
+            {isFlagged ? "Unflag number" : "Flag number"}
           </button>
           {note ? <p className={metaMuted}>{note}</p> : null}
         </div>

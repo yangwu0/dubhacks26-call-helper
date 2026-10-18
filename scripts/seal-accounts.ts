@@ -10,7 +10,7 @@ async function main() {
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("owners")
-    .select("id, name, aliases, phone, imessage_handle");
+    .select("id, name, aliases, phone");
   if (error) throw new Error(error.message);
 
   const rows = (data ?? []) as SealableOwner[];
@@ -23,9 +23,7 @@ async function main() {
     sealed += 1;
   }
 
-  const check = await supabase
-    .from("owners")
-    .select("id, name, aliases, phone, imessage_handle");
+  const check = await supabase.from("owners").select("id, name, aliases, phone");
   if (check.error) throw new Error(check.error.message);
   const after = (check.data ?? []) as SealableOwner[];
   console.log(`sealed ${sealed} of ${rows.length} accounts`);
@@ -38,7 +36,7 @@ async function main() {
           ? "sealed"
           : "plaintext";
     console.log(
-      `${row.id} name=${status(row.name)} phone=${status(row.phone)} imessage=${status(row.imessage_handle)} aliases=${aliasState}`,
+      `${row.id} name=${status(row.name)} phone=${status(row.phone)} aliases=${aliasState}`,
     );
   }
 }

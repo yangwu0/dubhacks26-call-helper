@@ -12,14 +12,14 @@ function accountPayload(owner: {
   name: string;
   aliases: string[] | null;
   phone: string;
-  sift_number?: string | null;
+  photon_number?: string | null;
 }) {
   return {
     id: owner.id,
     name: owner.name,
     aliases: owner.aliases ?? [],
     phone: owner.phone,
-    siftNumber: owner.sift_number ?? "",
+    photonNumber: owner.photon_number ?? "",
     encrypted: true,
   };
 }
@@ -63,14 +63,12 @@ export async function PATCH(req: Request) {
       return json({ error: "Enter your phone with the country code, like +12065550100." }, 400);
     }
     const previousPhone = owner.phone.trim();
-    const handle = nextPhone || owner.imessage_handle;
 
     const sealed = sealOwner({
       id: owner.id,
       name,
       aliases,
       phone: nextPhone,
-      imessage_handle: handle,
     });
     const saved = await serviceClient()
       .from("owners")
@@ -78,7 +76,6 @@ export async function PATCH(req: Request) {
         name: sealed.name,
         aliases: sealed.aliases,
         phone: sealed.phone,
-        imessage_handle: sealed.imessage_handle,
       })
       .eq("id", owner.id)
       .select("id")
@@ -87,9 +84,7 @@ export async function PATCH(req: Request) {
     if (!saved.data) return json({ error: "Could not save the profile." }, 404);
 
     const message =
-      nextPhone && nextPhone !== previousPhone
-        ? "Phone saved. Text Sift's number from this phone once it shows up."
-        : "Saved.";
+      nextPhone && nextPhone !== previousPhone ? "Phone saved." : "Saved.";
 
     return json({
       ok: true,
@@ -99,7 +94,7 @@ export async function PATCH(req: Request) {
         name,
         aliases,
         phone: nextPhone,
-        sift_number: owner.sift_number,
+        photon_number: owner.photon_number,
       }),
     });
   } catch (error) {
