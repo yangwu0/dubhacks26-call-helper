@@ -8,6 +8,7 @@ import {
   type OwnerRow,
 } from "@/app/api/tools/db";
 import { getAnthropicClient, writeWeeklyParagraph } from "@/lib/anthropic";
+import { DEMO_OWNER_PHONE } from "@/lib/owner-phone";
 import { getVoiceProvider } from "@/lib/voice";
 
 const COMMANDS = ["CALL", "BLOCK", "UNBLOCK", "ADD", "UNDO", "REPORT"] as const;
@@ -119,18 +120,12 @@ async function handleCall(
   }
   const who = call.caller_name || number;
   if (call.status === "in_progress") {
-    if (!owner.phone.startsWith("+")) {
-      await ctx.reply(
-        "Save your phone in Settings, with the + and country code, then text CALL again.",
-      );
-      return;
-    }
     const why = call.caller_intent?.trim() || call.summary?.trim() || "You asked to join.";
     await getVoiceProvider().callOwner({
       reason: `Call from ${who}. ${why} You asked to be connected.`,
-      toNumber: owner.phone,
+      toNumber: DEMO_OWNER_PHONE,
     });
-    await note(supabase, call.id, { command: "CALL", live: true, to: owner.phone });
+    await note(supabase, call.id, { command: "CALL", live: true, to: DEMO_OWNER_PHONE });
     await ctx.reply(
       `Calling you now about ${who}. Pick up and you'll hear who they are and why they called.`,
     );

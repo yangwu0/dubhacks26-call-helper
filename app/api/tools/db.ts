@@ -91,7 +91,7 @@ async function hydrateOwners(
   return rows.map((row) => openOwner(row));
 }
 
-async function listOwners(supabase: SupabaseClient): Promise<OwnerRow[]> {
+export async function listOwners(supabase: SupabaseClient): Promise<OwnerRow[]> {
   const { data, error } = await supabase
     .from("owners")
     .select(OWNER_COLUMNS)
@@ -181,9 +181,7 @@ export async function ownerForCalledNumber(
   const rows = (data ?? []) as OwnerRow[];
   if (rows.length === 0) return null;
   const owners = await hydrateOwners(supabase, rows);
-  if (owners.length === 1) return owners[0];
-  const withPhone = owners.filter((owner) => owner.phone.trim().startsWith("+"));
-  return withPhone.length === 1 ? withPhone[0] : null;
+  return owners.length === 1 ? owners[0] : null;
 }
 
 export async function ownerFromRequest(req: Request): Promise<OwnerRow | null> {

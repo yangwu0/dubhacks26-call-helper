@@ -2,7 +2,7 @@ import { after } from "next/server";
 import { verifySecret } from "@/lib/auth";
 import { parseCommand } from "@/lib/commands";
 import { verifyPhotonWebhook } from "@/lib/photon-api";
-import { getSpectrumApp, handleInboundMessage, handlePhotonDelivery } from "@/lib/photon";
+import { handlePhotonDelivery } from "@/lib/photon";
 
 function json(data: unknown, status = 200) {
   return Response.json(data, { status });
@@ -75,21 +75,5 @@ export async function POST(req: Request) {
     return json({ ...result, replies });
   }
 
-  try {
-    const app = await getSpectrumApp();
-    const jobs: Promise<void>[] = [];
-    const response = await app.webhook(req, (space, message) => {
-      const job = handleInboundMessage(space, message);
-      jobs.push(job);
-      return job;
-    });
-    after(async () => {
-      await Promise.all(jobs);
-    });
-    return response;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "photon inbound failed";
-    console.error("photon inbound", message);
-    return json({ error: message }, 500);
-  }
+  return json({ error: "unauthorized" }, 401);
 }

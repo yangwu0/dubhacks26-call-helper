@@ -1,10 +1,10 @@
 import { takeMessageRequestSchema } from "@/lib/contracts";
 import { getMessagingProvider } from "@/lib/messaging";
+import { DEMO_OWNER_PHONE } from "@/lib/owner-phone";
 import {
   getCallByConversation,
   insertEvent,
   json,
-  ownerForCall,
   rejectIfUnauthorized,
   serviceClient,
 } from "@/app/api/tools/db";
@@ -30,7 +30,6 @@ export async function POST(req: Request) {
     const supabase = serviceClient();
     const call = await getCallByConversation(supabase, conversation_id);
     if (!call) return json({ error: "unknown conversation" }, 404);
-    const owner = await ownerForCall(supabase, call);
 
     const storedSummary = message.trim();
     const update: Record<string, unknown> = {
@@ -46,18 +45,7 @@ export async function POST(req: Request) {
       .update(update)
       .eq("id", call.id);
     if (error) throw new Error(error.message);
-    if (!owner) {
-      await insertEvent(supabase, call.id, "tool", {
-        tool: "take_message",
-        ok: false,
-        reason: "no matched person",
-        caller_name,
-        callback_number,
-      });
-      return json({ ok: false });
-    }
-
-    const address = owner.imessage_handle || owner.phone;
+    const address = DEMO_OWNER_PHONE;
     const channel = "imessage";
     const bodyText = `Message from ${caller_name} (${callback_number}): ${message}`;
     let sendError: string | null = null;

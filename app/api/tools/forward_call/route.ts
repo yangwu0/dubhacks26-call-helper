@@ -1,6 +1,7 @@
 import { forwardCallRequestSchema } from "@/lib/contracts";
 import { FORWARD_MAX_SCORE } from "@/lib/scoring";
 import { startForward } from "@/lib/forward";
+import { DEMO_OWNER_PHONE } from "@/lib/owner-phone";
 import {
   getCallByConversation,
   insertEvent,
@@ -63,7 +64,7 @@ export async function POST(req: Request) {
     }
     const result = await startForward({
       call,
-      ownerPhone: owner.phone,
+      ownerPhone: DEMO_OWNER_PHONE,
       reason,
       urgency,
     });

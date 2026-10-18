@@ -12,7 +12,8 @@ import {
   serviceClient,
 } from "@/app/api/tools/db";
 
-// Conversation initiation webhook. The dialed Photon number picks the account.
+// Conversation initiation webhook. One Photon number serves every account.
+// The name check later picks which person the caller asked for.
 // https://elevenlabs.io/docs/eleven-agents/customization/personalization
 export async function POST(req: Request) {
   const unauthorized = rejectIfUnauthorized(req);
@@ -88,7 +89,7 @@ export async function POST(req: Request) {
     return json({
       type: "conversation_initiation_client_data",
       dynamic_variables: {
-        owner_name: owner?.name ?? "the owner of this number",
+        owner_name: owner?.name ?? "this number",
         caller_number: callerNumber,
         is_blocked: blocked,
         is_known_contact: known,

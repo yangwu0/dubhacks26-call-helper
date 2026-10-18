@@ -95,7 +95,7 @@ export default function SettingsPage() {
               <p className="font-display text-2xl font-bold">{formatPhone(owner.siftNumber)}</p>
               <p className={metaMuted}>
                 {lineNote ||
-                  "Text this number from your phone once. Sift can reply after that."}
+                  "Everyone calls this number. Sift asks who the call is for, then texts that person."}
               </p>
             </>
           ) : owner.phone ? (

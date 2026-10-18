@@ -4,9 +4,11 @@ import {
   getCallByConversation,
   insertEvent,
   json,
+  listOwners,
   ownerForCall,
   rejectIfUnauthorized,
   serviceClient,
+  type OwnerRow,
 } from "@/app/api/tools/db";
 
 export async function POST(req: Request) {
@@ -30,16 +32,37 @@ export async function POST(req: Request) {
     const call = await getCallByConversation(supabase, conversation_id);
     if (!call) return json({ error: "unknown conversation" }, 404);
 
-    const owner = await ownerForCall(supabase, call);
-    const result = owner
-      ? fuzzyMatchName(claimed_target, owner.name, owner.aliases ?? [])
-      : { match: false, confidence: 0, matchedAgainst: null };
+    const assigned = await ownerForCall(supabase, call);
+    const candidates = assigned
+      ? [assigned]
+      : (await listOwners(supabase)).filter(
+          (owner) => owner.name.trim() && owner.phone.trim().startsWith("+"),
+        );
+    const ranked = candidates
+      .map((owner) => ({
+        owner,
+        result: fuzzyMatchName(claimed_target, owner.name, owner.aliases ?? []),
+      }))
+      .sort((left, right) => right.result.confidence - left.result.confidence);
+    const best = ranked[0];
+    const second = ranked[1];
+    const tied = Boolean(
+      best?.result.match &&
+        second?.result.match &&
+        second.result.confidence === best.result.confidence,
+    );
+    const chosen = best?.result.match && !tied ? best.owner : null;
+    const owner: OwnerRow | null = chosen ?? assigned;
+    const result = chosen && best
+      ? best.result
+      : { match: false, confidence: best?.result.confidence ?? 0, matchedAgainst: null };
 
     const { error } = await supabase
       .from("calls")
       .update({
         claimed_target,
         target_match: result.match,
+        ...(result.match && owner ? { owner_id: owner.id } : {}),
       })
       .eq("id", call.id);
     if (error) throw new Error(error.message);

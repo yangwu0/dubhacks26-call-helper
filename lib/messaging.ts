@@ -30,8 +30,8 @@ export function formatPostCallMessage(summary: CallSummary): string {
 
 export class PhotonMessaging implements MessagingProvider {
   async send(to: string, body: string): Promise<void> {
-    const { sendIMessage } = await import("./photon");
-    await sendIMessage(to, body);
+    const { sendPhotonText } = await import("./photon-api");
+    await sendPhotonText(to, body);
   }
 }
 

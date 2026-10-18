@@ -1,6 +1,7 @@
 import { ownerFromRequest, resolveOwner, serviceClient } from "@/app/api/tools/db";
 import { createWeeklyReport } from "@/lib/commands";
 import { getMessagingProvider } from "@/lib/messaging";
+import { DEMO_OWNER_PHONE } from "@/lib/owner-phone";
 
 function json(data: unknown, status = 200) {
   return Response.json(data, { status });
@@ -26,7 +27,7 @@ export async function POST(req: Request) {
     const supabase = serviceClient();
     const owner = await ownerForReport(req);
     const report = await createWeeklyReport(supabase, owner);
-    const address = owner.imessage_handle || owner.phone;
+    const address = DEMO_OWNER_PHONE;
     const channel =
       (process.env.MESSAGING_PROVIDER ?? "photon") === "sms" ? "sms" : "imessage";
     await getMessagingProvider().send(address, report.text);

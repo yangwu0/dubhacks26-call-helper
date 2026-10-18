@@ -2,7 +2,8 @@ import { after } from "next/server";
 import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
 import { summarize } from "@/lib/anthropic";
 import { postCallWebhookSchema, type PostCallWebhook } from "@/lib/contracts";
-import { getMessagingProvider } from "@/lib/messaging";
+import { formatPostCallMessage, getMessagingProvider } from "@/lib/messaging";
+import { DEMO_OWNER_PHONE } from "@/lib/owner-phone";
 import { SCAM_SCORE, classifyCall } from "@/lib/scoring";
 import { verifySecret } from "@/lib/auth";
 import {
@@ -10,7 +11,6 @@ import {
   getCallByConversation,
   insertEvent,
   json,
-  ownerForCall,
   saveTranscriptTurns,
   serviceClient,
   type CallRow,
@@ -49,27 +49,12 @@ function callerLabel(call: CallRow): string {
   return call.caller_name || call.caller_number || "unknown caller";
 }
 
-function messageBodyForOwner(call: CallRow): string {
-  const who = callerLabel(call);
-  const intent = call.caller_intent?.trim();
-  if (intent) return `Message from ${who}: ${intent}`;
-  return `Call from ${who}. Sift took a message but no text was captured.`;
-}
-
 async function sendToOwner(
   supabase: SupabaseClient,
   call: CallRow,
   body: string,
 ) {
-  const owner = await ownerForCall(supabase, call);
-  if (!owner) {
-    await insertEvent(supabase, call.id, "action", {
-      step: "summary_skipped",
-      reason: "no matched person",
-    });
-    return;
-  }
-  const address = owner.imessage_handle || owner.phone;
+  const address = DEMO_OWNER_PHONE;
   const channel = "imessage";
   let sendError: string | null = null;
   try {
@@ -126,27 +111,32 @@ async function finishTranscription(
     callerIntent: call.caller_intent,
   });
 
-  const isScam =
-    decision.classification === "scam" || (call.risk_score ?? 0) >= SCAM_SCORE;
-
   let summary: string;
-  if (isScam) {
-    try {
-      summary = await summarize(text);
-    } catch (error) {
-      const reason = error instanceof Error ? error.message : "summarize failed";
-      summary = `Scam call from ${callerLabel(call)}. Risk ${call.risk_score ?? 0}. ${asStringArray(call.risk_reasons).join("; ") || "Flagged as high risk."} (Summary unavailable: ${reason})`;
-      console.error("summarize", reason);
-    }
-  } else if (call.summary?.trim()) {
-    summary = call.summary.trim();
-  } else if (call.caller_intent?.trim()) {
-    summary = call.caller_intent.trim();
-  } else if (call.action === "forwarded" || call.action === "booked") {
-    summary = `Call from ${callerLabel(call)} was connected. ${call.caller_intent?.trim() || "No message stored."}`;
-  } else {
-    summary = messageBodyForOwner(call);
+  let classification = decision.classification;
+  let action = decision.action;
+  try {
+    const written = await summarize(text, {
+      caller_name: call.caller_name,
+      caller_number: call.caller_number,
+      caller_intent: call.caller_intent,
+      risk_score: call.risk_score,
+      risk_reasons: asStringArray(call.risk_reasons),
+      action: call.action,
+      target_match: call.target_match,
+    });
+    summary = formatPostCallMessage(written);
+    classification = written.classification;
+    if (written.suggested_action === "block") action = "blocked";
+    else if (written.suggested_action === "book") action = "booked";
+    else if (written.suggested_action === "forward") action = "forwarded";
+    else if (written.suggested_action === "take_message") action = "message_taken";
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : "summarize failed";
+    summary = `Call from ${callerLabel(call)}. A written summary is unavailable (${reason}).`;
+    console.error("summarize", reason);
   }
+
+  const isScam = classification === "scam" || (call.risk_score ?? 0) >= SCAM_SCORE;
 
   const { error } = await supabase
     .from("calls")
@@ -159,8 +149,8 @@ async function finishTranscription(
         time_in_call_secs: turn.timeInCallSecs ?? null,
       })),
       summary,
-      classification: decision.classification,
-      action: decision.action,
+      classification,
+      action,
     })
     .eq("id", call.id);
   if (error) throw new Error(error.message);
@@ -175,12 +165,7 @@ async function finishTranscription(
     if (blockError) throw new Error(blockError.message);
   }
 
-  const messageAlreadySent = call.action === "message_taken";
-  if (isScam) {
-    await sendToOwner(supabase, call, summary);
-  } else if (!messageAlreadySent) {
-    await sendToOwner(supabase, call, messageBodyForOwner(call));
-  }
+  await sendToOwner(supabase, call, summary);
 }
 
 async function finishFailure(
