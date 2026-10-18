@@ -1,4 +1,4 @@
-import { getOwner, serviceClient } from "@/app/api/tools/db";
+import { ownerFromRequest, resolveOwner, serviceClient } from "@/app/api/tools/db";
 import { createWeeklyReport } from "@/lib/commands";
 import { getMessagingProvider } from "@/lib/messaging";
 
@@ -6,9 +6,14 @@ function json(data: unknown, status = 200) {
   return Response.json(data, { status });
 }
 
-export async function GET() {
+async function ownerForReport(req: Request) {
+  return (await ownerFromRequest(req)) ?? resolveOwner(serviceClient());
+}
+
+export async function GET(req: Request) {
   try {
-    return json(await createWeeklyReport());
+    const owner = await ownerForReport(req);
+    return json(await createWeeklyReport(serviceClient(), owner));
   } catch (error) {
     const message = error instanceof Error ? error.message : "report failed";
     console.error("weekly report", message);
@@ -16,11 +21,11 @@ export async function GET() {
   }
 }
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
     const supabase = serviceClient();
-    const report = await createWeeklyReport(supabase);
-    const owner = await getOwner(supabase);
+    const owner = await ownerForReport(req);
+    const report = await createWeeklyReport(supabase, owner);
     const address = owner.imessage_handle || owner.phone;
     const channel =
       (process.env.MESSAGING_PROVIDER ?? "photon") === "sms" ? "sms" : "imessage";

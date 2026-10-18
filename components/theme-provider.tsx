@@ -40,6 +40,9 @@ function readInitialTheme(): ThemeMode {
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   // Match SSR (`light`); sync from `<html data-theme>` after the inline script runs.
+  // Match the server render (`data-theme="sift"`). The boot script may already
+  // have switched the attribute from localStorage; sync after mount so the
+  // toggle icon does not disagree with the server HTML.
   const [theme, setThemeState] = useState<ThemeMode>("light");
 
   useEffect(() => {

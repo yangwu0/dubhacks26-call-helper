@@ -1,10 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+
+import { usePathname, useRouter } from "next/navigation";
 import { motion, MotionConfig } from "framer-motion";
 import { Suspense, type ReactNode } from "react";
+import { formatPhone } from "@/components/format";
 import { SiftLogo } from "@/components/sift-logo";
+import { useSiftDirectory } from "@/components/sift-provider";
+import { getOptionalBrowserClient } from "@/components/supabase-browser";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const LINKS = [
@@ -55,16 +59,56 @@ function ActiveNav() {
   return <NavTabs pathname={pathname} />;
 }
 
+function SignOut() {
+  const router = useRouter();
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        const supabase = getOptionalBrowserClient();
+        void supabase?.auth.signOut().finally(() => {
+          router.replace("/");
+        });
+      }}
+      className="btn btn-ghost btn-sm h-10 w-auto rounded-xl text-sm font-semibold"
+    >
+      Sign out
+    </button>
+  );
+}
+
 export function DashboardShell({ children }: { children: ReactNode }) {
+  const { owner } = useSiftDirectory();
+
   return (
     <MotionConfig reducedMotion="user">
-      <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-4 pt-6 pb-28 sm:px-6 sm:pt-8 md:px-8 md:pt-12 md:pb-16">
-        <header className="flex items-center justify-between md:sift-elevate md:rounded-3xl md:bg-base-200 md:px-4 md:py-2.5">
-          <Link href="/dashboard" className="flex items-center gap-3" aria-label="Sift dashboard">
-            <SiftLogo size="md" />
-            <span className="font-display text-xl font-bold tracking-tight">Sift</span>
-          </Link>
-          <ThemeToggle />
+      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-5 sm:px-6 lg:px-8">
+        <header className="mb-4 space-y-3">
+          <div className="navbar min-h-0 rounded-box border border-base-300/50 bg-base-100 px-2 py-1.5 shadow-sm">
+            <div className="navbar-start">
+              <Link href="/dashboard" className="flex items-center gap-2.5 px-1">
+                <SiftLogo size="md" />
+                <span className="hidden sm:block">
+                  <span className="font-display block text-lg font-bold leading-none mt-2">Sift</span>
+                  <span className="text-xs text-base-content/70">
+                    {owner.siftNumber
+                      ? formatPhone(owner.siftNumber)
+                      : owner.name || "Looking out for your line"}
+                  </span>
+                </span>
+              </Link>
+            </div>
+            <div className="navbar-end gap-2">
+              <ThemeToggle />
+              <SignOut />
+            </div>
+          </div>
+          <div className="flex justify-center overflow-x-auto pb-0.5 sm:justify-start">
+            <Suspense fallback={<NavTabs pathname={null} />}>
+              <ActiveNav />
+            </Suspense>
+          </div>
         </header>
         <Suspense fallback={<NavTabs pathname={null} />}>
           <ActiveNav />

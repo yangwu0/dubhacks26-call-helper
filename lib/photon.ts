@@ -154,7 +154,7 @@ export async function handleInboundMessage(
       await reply(await scanOrExplain(() => scanContent({ text: content.text })));
       return;
     }
-    const result = await parseCommand(content.text, { reply });
+    const result = await parseCommand(content.text, { reply, address });
     if (result.ok) await message.react(Emoji.like);
     return;
   }
@@ -166,6 +166,7 @@ export async function handleInboundMessage(
     if (choice === "block") {
       await parseCommand("BLOCK", {
         reply,
+        address,
         numberOverride: numberForPoll(content.pollMessageGuid),
       });
       return;

@@ -7,7 +7,7 @@ import { useSiftDirectory } from "@/components/sift-provider";
 import { cardClass, metaMuted, riskPill } from "@/components/styles";
 
 export default function CallsPage() {
-  const { calls, usingSample } = useSiftDirectory();
+  const { calls } = useSiftDirectory();
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-3">
@@ -45,6 +45,67 @@ export default function CallsPage() {
           })}
         </ul>
       )}
+    <div>
+      <p className={pageEyebrow}>The log</p>
+      <h1 className={pageTitle}>Calls</h1>
+      <p className={pageSubtitle}>Calls stored for your account.</p>
+      <div className={`${cardClass} mt-6`}>
+        <div className="card-body p-0">
+          <div className="overflow-x-auto">
+            <table className="table table-zebra">
+              <thead>
+                <tr>
+                  <th className={labelCaps}>When</th>
+                  <th className={labelCaps}>Caller</th>
+                  <th className={labelCaps}>Number</th>
+                  <th className={labelCaps}>Name check</th>
+                  <th className={labelCaps}>Risk</th>
+                  <th className={labelCaps}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {calls.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-10 text-base-content/65">
+                      No calls yet.
+                    </td>
+                  </tr>
+                ) : (
+                  calls.map((call) => {
+                    const tone = riskTone(call.riskScore);
+                    return (
+                      <tr key={call.id} className="hover">
+                        <td className="text-base-content/70">{formatWhen(call.startedAt)}</td>
+                        <td>
+                          <Link
+                            href={`/dashboard/calls/${call.id}`}
+                            className="link link-hover font-bold no-underline"
+                          >
+                            {call.callerName || "Unknown"}
+                          </Link>
+                          <p className={metaMuted}>{call.callerIntent}</p>
+                        </td>
+                        <td className="text-base-content/70">{formatPhone(call.callerNumber)}</td>
+                        <td>
+                          {call.targetMatch === true
+                            ? "Match"
+                            : call.targetMatch === false
+                              ? "Mismatch"
+                              : "Unknown"}
+                        </td>
+                        <td>
+                          <span className={riskPill[tone]}>{call.riskScore}</span>
+                        </td>
+                        <td>{actionText(call.action, call.status)}</td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

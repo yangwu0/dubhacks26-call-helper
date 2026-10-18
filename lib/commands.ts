@@ -1,10 +1,11 @@
 import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
-  getOwner,
   insertEvent,
   normalizePhone,
+  ownerForSender,
   serviceClient,
+  type OwnerRow,
 } from "@/app/api/tools/db";
 import { getAnthropicClient, writeWeeklyParagraph } from "@/lib/anthropic";
 import { getVoiceProvider } from "@/lib/voice";
@@ -16,6 +17,7 @@ export type CommandContext = {
   supabase?: SupabaseClient;
   reply: (body: string) => Promise<void>;
   numberOverride?: string;
+  address?: string;
 };
 
 export type CommandResult = {
@@ -27,6 +29,7 @@ type CallRecord = {
   id: string;
   caller_number: string | null;
   caller_name: string | null;
+  caller_intent: string | null;
   status: string | null;
   call_sid: string | null;
   summary: string | null;
@@ -55,12 +58,16 @@ function required(name: string): string {
   return value;
 }
 
-async function latestCall(supabase: SupabaseClient): Promise<CallRecord | null> {
+async function latestCall(
+  supabase: SupabaseClient,
+  ownerId: string,
+): Promise<CallRecord | null> {
   const { data, error } = await supabase
     .from("calls")
     .select(
-      "id, caller_number, caller_name, status, call_sid, summary, classification, action, started_at",
+      "id, caller_number, caller_name, caller_intent, status, call_sid, summary, classification, action, started_at",
     )
+    .eq("owner_id", ownerId)
     .order("started_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -103,6 +110,7 @@ async function handleCall(
   supabase: SupabaseClient,
   ctx: CommandContext,
   call: CallRecord | null,
+  owner: OwnerRow,
 ) {
   const number = targetNumber(call, ctx.numberOverride);
   if (!call || !number) {
@@ -110,16 +118,21 @@ async function handleCall(
     return;
   }
   const who = call.caller_name || number;
-  if (call.status === "in_progress" && call.call_sid) {
-    const owner = await getOwner(supabase);
-    await getVoiceProvider().forwardCall({
-      callId: call.call_sid,
-      ownerPhone: owner.phone,
-      whisperText: `Call from ${who}. You asked to join.`,
+  if (call.status === "in_progress") {
+    if (!owner.phone.startsWith("+")) {
+      await ctx.reply(
+        "Save your phone in Settings, with the + and country code, then text CALL again.",
+      );
+      return;
+    }
+    const why = call.caller_intent?.trim() || call.summary?.trim() || "You asked to join.";
+    await getVoiceProvider().callOwner({
+      reason: `Call from ${who}. ${why} You asked to be connected.`,
+      toNumber: owner.phone,
     });
-    await note(supabase, call.id, { command: "CALL", live: true });
+    await note(supabase, call.id, { command: "CALL", live: true, to: owner.phone });
     await ctx.reply(
-      "I can't conference you into the live Photon call from iMessage. Spectrum has no conference control. The agent can still transfer with its transfer number while the call is up.",
+      `Calling you now about ${who}. Pick up and you'll hear who they are and why they called.`,
     );
     return;
   }
@@ -133,6 +146,7 @@ async function handleBlock(
   supabase: SupabaseClient,
   ctx: CommandContext,
   call: CallRecord | null,
+  owner: OwnerRow,
   block: boolean,
 ) {
   const number = targetNumber(call, ctx.numberOverride);
@@ -146,8 +160,8 @@ async function handleBlock(
   }
   if (block) {
     const { error } = await supabase.from("blocked_numbers").upsert(
-      { number, reason: "Owner replied BLOCK" },
-      { onConflict: "number" },
+      { number, reason: "Owner replied BLOCK", owner_id: owner.id },
+      { onConflict: "owner_id,number" },
     );
     if (error) throw new Error(error.message);
     if (call) await note(supabase, call.id, { command: "BLOCK", number });
@@ -157,6 +171,7 @@ async function handleBlock(
   const { error } = await supabase
     .from("blocked_numbers")
     .delete()
+    .eq("owner_id", owner.id)
     .eq("number", number);
   if (error) throw new Error(error.message);
   if (call) await note(supabase, call.id, { command: "UNBLOCK", number });
@@ -186,6 +201,7 @@ async function handleAdd(
   supabase: SupabaseClient,
   ctx: CommandContext,
   call: CallRecord | null,
+  owner: OwnerRow,
 ) {
   if (!call) {
     await ctx.reply("There is no recent call with a proposed time.");
@@ -204,7 +220,6 @@ async function handleAdd(
     await ctx.reply("The last call doesn't have a proposed time to add.");
     return;
   }
-  const owner = await getOwner(supabase);
   const { data: existing, error: existingError } = await supabase
     .from("calendar_events")
     .select("id")
@@ -234,8 +249,8 @@ async function handleUndo(
   supabase: SupabaseClient,
   ctx: CommandContext,
   call: CallRecord | null,
+  owner: OwnerRow,
 ) {
-  const owner = await getOwner(supabase);
   let query = supabase
     .from("calendar_events")
     .select("id, title")
@@ -287,13 +302,14 @@ export type WeeklyStats = {
 
 export async function collectWeeklyStats(
   supabase: SupabaseClient,
+  owner: OwnerRow,
 ): Promise<WeeklyStats> {
   const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-  const owner = await getOwner(supabase);
   const timeZone = owner.timezone || "America/Los_Angeles";
   const { data: calls, error } = await supabase
     .from("calls")
     .select("classification, action, started_at")
+    .eq("owner_id", owner.id)
     .gte("started_at", since);
   if (error) throw new Error(error.message);
   const rows = calls ?? [];
@@ -322,6 +338,7 @@ export async function collectWeeklyStats(
   const { data: events, error: eventError } = await supabase
     .from("calendar_events")
     .select("status")
+    .eq("owner_id", owner.id)
     .gte("starts_at", since);
   if (eventError) throw new Error(eventError.message);
   const list = events ?? [];
@@ -357,9 +374,11 @@ export type WeeklyReport = WeeklyStats & {
 
 export async function createWeeklyReport(
   supabase?: SupabaseClient,
+  owner?: OwnerRow,
 ): Promise<WeeklyReport> {
   const client = supabase ?? serviceClient();
-  const stats = await collectWeeklyStats(client);
+  const who = owner ?? (await ownerForSender(client));
+  const stats = await collectWeeklyStats(client, who);
   let paragraph: string;
   try {
     paragraph = await writeWeeklyParagraph(stats);
@@ -376,6 +395,7 @@ export async function createWeeklyReport(
 
 async function answerQuestion(
   supabase: SupabaseClient,
+  owner: OwnerRow,
   question: string,
 ): Promise<string> {
   const { data, error } = await supabase
@@ -383,6 +403,7 @@ async function answerQuestion(
     .select(
       "caller_name, caller_number, classification, risk_score, caller_intent, action, summary, started_at",
     )
+    .eq("owner_id", owner.id)
     .order("started_at", { ascending: false })
     .limit(20);
   if (error) throw new Error(error.message);
@@ -414,27 +435,29 @@ async function answerQuestion(
 
 async function dispatch(text: string, ctx: CommandContext): Promise<CommandResult> {
   const supabase = db(ctx);
+  const owner = await ownerForSender(supabase, ctx.address);
   const command = commandName(text);
-  const call = command && command !== "REPORT" ? await latestCall(supabase) : null;
+  const call =
+    command && command !== "REPORT" ? await latestCall(supabase, owner.id) : null;
 
   if (command === "CALL") {
-    await handleCall(supabase, ctx, call);
+    await handleCall(supabase, ctx, call, owner);
     return { command, ok: true };
   }
   if (command === "BLOCK" || command === "UNBLOCK") {
-    await handleBlock(supabase, ctx, call, command === "BLOCK");
+    await handleBlock(supabase, ctx, call, owner, command === "BLOCK");
     return { command, ok: true };
   }
   if (command === "ADD") {
-    await handleAdd(supabase, ctx, call);
+    await handleAdd(supabase, ctx, call, owner);
     return { command, ok: true };
   }
   if (command === "UNDO") {
-    await handleUndo(supabase, ctx, call);
+    await handleUndo(supabase, ctx, call, owner);
     return { command, ok: true };
   }
   if (command === "REPORT") {
-    const report = await createWeeklyReport(supabase);
+    const report = await createWeeklyReport(supabase, owner);
     await ctx.reply(report.text);
     return { command, ok: true };
   }
@@ -446,7 +469,7 @@ async function dispatch(text: string, ctx: CommandContext): Promise<CommandResul
     );
     return { command: "help", ok: true };
   }
-  await ctx.reply(await answerQuestion(supabase, question));
+  await ctx.reply(await answerQuestion(supabase, owner, question));
   return { command: "question", ok: true };
 }
 

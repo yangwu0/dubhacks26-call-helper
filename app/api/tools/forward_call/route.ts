@@ -3,8 +3,8 @@ import { FORWARD_MAX_SCORE } from "@/lib/scoring";
 import { startForward } from "@/lib/forward";
 import {
   getCallByConversation,
-  getOwner,
   insertEvent,
+  ownerForCall,
   json,
   rejectIfUnauthorized,
   serviceClient,
@@ -49,7 +49,18 @@ export async function POST(req: Request) {
       return json({ ok: false, message });
     }
 
-    const owner = await getOwner(supabase);
+    const owner = await ownerForCall(supabase, call);
+    if (!owner) {
+      const message = "Refusing to connect. Sift could not tell who this caller asked for.";
+      await insertEvent(supabase, call.id, "tool", {
+        tool: "forward_call",
+        ok: false,
+        message,
+        reason,
+        urgency,
+      });
+      return json({ ok: false, message });
+    }
     const result = await startForward({
       call,
       ownerPhone: owner.phone,

@@ -2,6 +2,7 @@
 
 ## 2026-10-17
 
+- `owners.user_id` links a Supabase Auth user to their profile. Dashboard reads and settings writes go through that user's session. Tool contracts are unchanged.
 - **Twilio removed** from runtime: photon-only voice (`lib/voice.ts`, `lib/forward.ts`) and messaging (`lib/messaging.ts`). Deleted `lib/twilio.ts`, `lib/voice-twilio.ts`, and `/api/twilio/owner-status`.
 - **Transcripts:** post-call sets `calls.transcript` to null. Scams get a Claude summary (texted to owner). Legit/message calls store message text in `summary`; `take_message` texts the owner during the call.
 - ws1: Photon is the voice provider. `forward_call` returns optional `transfer_number` for SIP conference transfer. `call_sid` on init is optional; SIP may send `call_id`.

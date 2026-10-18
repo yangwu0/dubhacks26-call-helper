@@ -18,7 +18,8 @@ import {
 } from "@/components/styles";
 
 export default function SettingsPage() {
-  const { owner, blocked, usingSample, saveOwner, addBlocked, removeBlocked } = useSiftDirectory();
+  const { owner, blocked, lineNote, lineStatus, saveOwner, addBlocked, removeBlocked } =
+    useSiftDirectory();
   const [name, setName] = useState(owner.name);
   const [aliases, setAliases] = useState(owner.aliases);
   const [phone, setPhone] = useState(owner.phone);
@@ -27,12 +28,19 @@ export default function SettingsPage() {
   const [blockReason, setBlockReason] = useState("");
   const [note, setNote] = useState("");
   const dirty = useRef(false);
+  const loadedOwner = useRef(owner.id);
 
   useEffect(() => {
-    if (dirty.current) return;
+    if (loadedOwner.current === owner.id && dirty.current) return;
+    loadedOwner.current = owner.id;
+    dirty.current = false;
     setName(owner.name);
     setAliases(owner.aliases);
     setPhone(owner.phone);
+    setAliasDraft("");
+    setBlockNumber("");
+    setBlockReason("");
+    setNote("");
   }, [owner]);
 
   function markDirty() {
@@ -75,13 +83,16 @@ export default function SettingsPage() {
       <p className={pageEyebrow}>Your line</p>
       <h1 className={pageTitle}>Settings</h1>
       <p className={pageSubtitle}>
-        {usingSample ? "Sample profile, until the directory connects." : "Connected to your directory."}
+        Sift texts the phone you already use. The number people call shows up on its own.
       </p>
 
       <div className="mt-8 grid gap-6 xl:grid-cols-2">
         <form onSubmit={onSave} className={cardClass}>
           <div className={cardBodyClass}>
             <h2 className={cardHeading}>Owner</h2>
+            <p className={metaMuted}>
+              Your name, aliases, and phone are encrypted before they are stored.
+            </p>
             <fieldset className="fieldset">
               <legend className="fieldset-legend font-bold">Name</legend>
               <input
@@ -94,19 +105,21 @@ export default function SettingsPage() {
                 className={inputClass}
               />
             </fieldset>
-            <fieldset className="fieldset">
-              <legend className="fieldset-legend font-bold">Phone</legend>
-              <input
-                id="owner-phone"
-                value={phone}
-                onChange={(event) => {
-                  markDirty();
-                  setPhone(event.target.value);
-                }}
-                placeholder="+12065550100"
-                className={inputClass}
-              />
-            </fieldset>
+            {owner.phone ? (
+              <fieldset className="fieldset">
+                <legend className="fieldset-legend font-bold">Phone</legend>
+                <input
+                  id="owner-phone"
+                  value={phone}
+                  onChange={(event) => {
+                    markDirty();
+                    setPhone(event.target.value);
+                  }}
+                  placeholder="+12065550100"
+                  className={inputClass}
+                />
+              </fieldset>
+            ) : null}
             <div>
               <p className="mb-2 font-bold">Aliases</p>
               <div className="flex flex-wrap gap-2">

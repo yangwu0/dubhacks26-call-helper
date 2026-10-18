@@ -34,12 +34,19 @@ export async function POST(req: Request) {
       reply: async (message) => {
         replies.push(message);
       },
-      numberOverride:
+        numberOverride:
         body &&
         typeof body === "object" &&
         "number" in body &&
         typeof body.number === "string"
           ? body.number
+          : undefined,
+      address:
+        body &&
+        typeof body === "object" &&
+        "address" in body &&
+        typeof body.address === "string"
+          ? body.address
           : undefined,
     });
     return json({ ...result, replies });

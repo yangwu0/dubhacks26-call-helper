@@ -2,9 +2,9 @@ import { checkAvailabilityRequestSchema } from "@/lib/contracts";
 import { freeWindows } from "@/app/api/tools/calendar";
 import {
   getCallByConversation,
-  getOwner,
   insertEvent,
   json,
+  ownerForCall,
   rejectIfUnauthorized,
   serviceClient,
 } from "@/app/api/tools/db";
@@ -27,11 +27,12 @@ export async function POST(req: Request) {
 
   try {
     const supabase = serviceClient();
-    const [owner, call] = await Promise.all([
-      getOwner(supabase),
-      getCallByConversation(supabase, conversation_id),
-    ]);
+    const call = await getCallByConversation(supabase, conversation_id);
     if (!call) return json({ error: "unknown conversation" }, 404);
+    const owner = await ownerForCall(supabase, call);
+    if (!owner) {
+      return json({ error: "No person is matched for this call yet." }, 409);
+    }
 
     const timeZone = owner.timezone || "America/Los_Angeles";
     const { data, error } = await supabase
