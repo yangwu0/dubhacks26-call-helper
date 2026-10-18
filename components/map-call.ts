@@ -124,7 +124,7 @@ export function mapCall(row: Record<string, unknown>, events: EventRow[] = []): 
   return {
     id,
     callerNumber: text(row.caller_number),
-    callerName: text(row.caller_name, "Unknown caller"),
+    callerName: text(row.caller_name),
     targetMatch: typeof row.target_match === "boolean" ? row.target_match : null,
     status,
     classification,

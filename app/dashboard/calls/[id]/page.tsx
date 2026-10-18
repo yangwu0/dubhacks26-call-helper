@@ -58,7 +58,9 @@ function CallDetailInner() {
         </Link>
         <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h1 className={pageTitle}>{call.callerName}</h1>
+            <h1 className={pageTitle}>
+              {call.callerName.trim() || formatPhone(call.callerNumber) || "Caller"}
+            </h1>
             <p className={`mt-1 ${bodyMuted}`}>
               {formatPhone(call.callerNumber)} · {formatWhen(call.startedAt)}
             </p>

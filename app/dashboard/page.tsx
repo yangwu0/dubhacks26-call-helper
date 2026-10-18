@@ -84,7 +84,9 @@ export default function DashboardPage() {
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="truncate font-semibold text-base-content">
-                {liveCall.callerName || "Unknown caller"}
+                {liveCall.callerName.trim() ||
+                  formatPhone(liveCall.callerNumber) ||
+                  "Caller"}
               </p>
               <p className={metaMuted}>{formatPhone(liveCall.callerNumber)}</p>
             </div>

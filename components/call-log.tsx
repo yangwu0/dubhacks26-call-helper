@@ -33,7 +33,9 @@ export function CallLog() {
                 <Link href={`/dashboard/calls/${call.id}`} className="block rounded-box bg-base-200 px-4 py-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="truncate font-semibold">{call.callerName || "Unknown"}</p>
+                      <p className="truncate font-semibold">
+                        {call.callerName.trim() || formatPhone(call.callerNumber) || "Caller"}
+                      </p>
                       <p className={metaMuted}>{formatPhone(call.callerNumber)}</p>
                     </div>
                     <span className={riskPill[tone]}>{call.riskScore}</span>
@@ -80,7 +82,9 @@ export function CallLog() {
                             href={`/dashboard/calls/${call.id}`}
                             className="link link-hover font-bold no-underline"
                           >
-                            {call.callerName || "Unknown"}
+                            {call.callerName.trim() ||
+                              formatPhone(call.callerNumber) ||
+                              "Caller"}
                           </Link>
                           <p className={metaMuted}>{call.summary}</p>
                         </td>
