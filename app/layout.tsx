@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Lexend, Libre_Baskerville } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
@@ -23,6 +23,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Sift",
   description: "AI that answers your phone.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 const themeInitScript = `(function(){try{var t=localStorage.getItem("sift-theme");document.documentElement.setAttribute("data-theme",t==="dark"?"dark":"sift");}catch(e){document.documentElement.setAttribute("data-theme","sift");}})();`;

@@ -125,6 +125,10 @@
 @layer base {
   * {
     @apply border-base-300/50 outline-info/40;
+    scrollbar-width: none;
+  }
+  *::-webkit-scrollbar {
+    display: none;
   }
   html {
     @apply font-sans antialiased;
@@ -139,6 +143,5 @@
 }
 
 .sift-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in oklab, var(--color-base-content) 25%, transparent) transparent;
+  scrollbar-width: none;
 }

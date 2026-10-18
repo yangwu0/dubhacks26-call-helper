@@ -212,20 +212,6 @@ export function SiftProvider({ children }: { children: ReactNode }) {
         void showUser(userId);
       }, 0);
     });
-    let syncTimer = 0;
-    const syncLiveTranscript = async () => {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (!token || cancelled) return;
-      await fetch("/api/live/sync", {
-        method: "POST",
-        headers: { authorization: `Bearer ${token}` },
-      }).catch(() => undefined);
-    };
-    void syncLiveTranscript();
-    syncTimer = window.setInterval(() => {
-      void syncLiveTranscript();
-    }, 4000);
     const channel = supabase
       .channel("sift-dashboard")
       .on(
@@ -252,7 +238,6 @@ export function SiftProvider({ children }: { children: ReactNode }) {
 
     return () => {
       cancelled = true;
-      window.clearInterval(syncTimer);
       authListener.subscription.unsubscribe();
       void supabase.removeChannel(channel);
     };
