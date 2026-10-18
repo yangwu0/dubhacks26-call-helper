@@ -1,4 +1,5 @@
 import { elevenLabsInitRequestSchema } from "@/lib/contracts";
+import { DEMO_PHOTON_NUMBER } from "@/lib/owner-phone";
 import {
   getCallByConversation,
   getOwnerById,
@@ -43,6 +44,16 @@ export async function POST(req: Request) {
     let callId = existing?.id ?? "";
     let ownerId = existing?.owner_id ?? matched?.id ?? null;
     if (existing?.owner_id) ownerId = existing.owner_id;
+    // Demo fallback: attach orphaned inbound calls to the shared Photon line owner.
+    if (!ownerId) {
+      const { data: demoOwner } = await supabase
+        .from("owners")
+        .select("id")
+        .eq("photon_number", DEMO_PHOTON_NUMBER)
+        .limit(1)
+        .maybeSingle();
+      ownerId = demoOwner?.id ?? null;
+    }
     if (!existing) {
       const { data: created, error } = await supabase
         .from("calls")

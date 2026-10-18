@@ -11,6 +11,7 @@ import {
 } from "react";
 import { mapCall, mapFlagged, mapOwner } from "@/components/map-call";
 import { getOptionalBrowserClient } from "@/components/supabase-browser";
+import { DEMO_EMAIL, DEMO_PASSWORD } from "@/lib/demo-auth";
 import type { CallRecord, FlaggedNumber, OwnerProfile } from "@/lib/mockCallData";
 
 type SaveResult = { ok: boolean; message: string };
@@ -185,17 +186,52 @@ export function SiftProvider({ children }: { children: ReactNode }) {
       await load(userId);
     }
 
+    async function ensureDemoSession(): Promise<string> {
+      const existing = await supabase.auth.getSession();
+      const existingId = existing.data.session?.user.id ?? "";
+      if (existingId) return existingId;
+
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email: DEMO_EMAIL, password: DEMO_PASSWORD }),
+      });
+      const body = (await response.json().catch(() => null)) as {
+        access_token?: string;
+        refresh_token?: string;
+        error?: string;
+      } | null;
+      if (!response.ok || !body?.access_token || !body?.refresh_token) {
+        throw new Error(body?.error || "Could not auto-sign in the demo account.");
+      }
+      await supabase.auth.signOut({ scope: "local" });
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: body.access_token,
+        refresh_token: body.refresh_token,
+      });
+      if (sessionError) throw new Error(sessionError.message);
+      const after = await supabase.auth.getSession();
+      const userId = after.data.session?.user.id ?? "";
+      if (!userId) throw new Error("Demo sign-in did not create a session.");
+      return userId;
+    }
+
     async function start() {
-      const { data } = await supabase.auth.getSession();
-      if (cancelled) return;
-      const userId = data.session?.user.id ?? "";
-      if (!userId) {
+      try {
+        const userId = await ensureDemoSession();
+        if (cancelled) return;
+        await showUser(userId);
+      } catch (loginError) {
+        if (cancelled) return;
         seenUser = "";
         clearAccount();
-        router.replace("/");
-        return;
+        setError(
+          loginError instanceof Error
+            ? loginError.message
+            : "Could not auto-sign in the demo account.",
+        );
+        setPhase("error");
       }
-      await showUser(userId);
     }
 
     void start();

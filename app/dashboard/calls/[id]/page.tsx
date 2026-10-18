@@ -30,7 +30,7 @@ function CallDetailInner() {
     return (
       <div className={`${cardClass} card-body items-start`}>
         <h1 className="font-display text-3xl font-extrabold">That call isn&apos;t here</h1>
-        <Link href="/dashboard/calls" className="link link-primary mt-4 font-bold">
+        <Link href="/" className="link link-primary mt-4 font-bold">
           Back to the log
         </Link>
       </div>
@@ -53,7 +53,7 @@ function CallDetailInner() {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-5">
       <div>
-        <Link href="/dashboard/calls" className={`link link-hover ${metaMuted} font-semibold`}>
+        <Link href="/" className={`link link-hover ${metaMuted} font-semibold`}>
           Log
         </Link>
         <div className="mt-2 flex flex-wrap items-end justify-between gap-3">

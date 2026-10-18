@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { sealOwner } from "@/lib/account-crypto";
 import { getOwnerByUserId, normalizePhone } from "@/app/api/tools/db";
+import { DEMO_OWNER_PHONE, DEMO_PHOTON_NUMBER } from "@/lib/owner-phone";
 import { createServiceClient } from "@/lib/supabase";
 
 function json(data: unknown, status = 200) {
@@ -130,51 +131,43 @@ export async function POST(req: Request) {
     );
   }
 
-  let phoneSaved = false;
+  const demoPhone = ownerPhone || DEMO_OWNER_PHONE;
   if (!existing.data) {
     const sealed = sealOwner({
       id: userId,
       name: displayName(email),
       aliases: [],
-      phone: ownerPhone,
+      phone: demoPhone,
     });
     const inserted = await admin.from("owners").insert({
       ...sealed,
       timezone: "America/Los_Angeles",
+      photon_number: DEMO_PHOTON_NUMBER,
     });
     if (inserted.error) return json({ error: inserted.error.message }, 500);
-    phoneSaved = Boolean(ownerPhone);
-  } else if (ownerPhone) {
+  } else {
     const owner = await getOwnerByUserId(admin, userId);
-    if (owner && !owner.phone.trim()) {
+    if (owner) {
+      const nextPhone = owner.phone.trim() || demoPhone;
       const sealed = sealOwner({
         ...owner,
-        phone: ownerPhone,
+        phone: nextPhone,
       });
       const updated = await admin
         .from("owners")
         .update({
           phone: sealed.phone,
+          photon_number: DEMO_PHOTON_NUMBER,
         })
         .eq("id", owner.id);
       if (updated.error) return json({ error: updated.error.message }, 500);
-      phoneSaved = true;
     }
   }
 
-  const needsPhone = !ownerPhone && !phoneSaved && !(await savedPhone(admin, userId));
   return json({
     access_token: signed.data.session.access_token,
     refresh_token: signed.data.session.refresh_token,
-    needs_phone: needsPhone,
-    phone_saved: phoneSaved,
+    needs_phone: false,
+    phone_saved: true,
   });
-}
-
-async function savedPhone(
-  admin: ReturnType<typeof createServiceClient>,
-  userId: string,
-): Promise<boolean> {
-  const owner = await getOwnerByUserId(admin, userId);
-  return Boolean(owner?.phone.trim());
 }
