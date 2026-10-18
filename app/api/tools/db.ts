@@ -130,27 +130,17 @@ export async function getOwnerByUserId(
   return owner ?? null;
 }
 
-// Picks the account a phone call belongs to. A matching OWNER_PHONE wins.
-// One account, or one account that actually has a phone, is safe to use.
-// Several blank profiles throw, so a call is never attached to a random row.
+// Used when a request has no signed-in user and no sender phone.
+// One account is unambiguous. Several accounts are chosen by the phone
+// saved on each row, or by the signed-in user.
 export async function resolveOwner(supabase: SupabaseClient): Promise<OwnerRow> {
   const owners = await listOwners(supabase);
   if (owners.length === 0) throw new Error("no owner row");
-
-  const configured = process.env.OWNER_PHONE?.trim() ?? "";
-  if (configured) {
-    const matches = owners.filter((owner) => samePhone(owner.phone, configured));
-    if (matches.length === 1) return matches[0];
-    if (matches.length > 1) {
-      throw new Error("More than one account uses OWNER_PHONE.");
-    }
-  }
-
   if (owners.length === 1) return owners[0];
   const withPhone = owners.filter((owner) => owner.phone.trim().startsWith("+"));
   if (withPhone.length === 1) return withPhone[0];
   throw new Error(
-    "More than one Sift account. Set OWNER_PHONE to the number Sift should answer for, and save that same number in Settings.",
+    "More than one Sift account. Match the phone saved on the account, or sign in.",
   );
 }
 
@@ -159,15 +149,14 @@ export async function ownerForSender(
   address?: string,
 ): Promise<OwnerRow> {
   const raw = address?.trim() ?? "";
-  if (raw) {
-    const owners = await listOwners(supabase);
-    const matches = owners.filter((owner) => matchesAddress(owner, raw));
-    if (matches.length === 1) return matches[0];
-    if (matches.length > 1) {
-      throw new Error("More than one account matches that sender.");
-    }
+  if (!raw) return resolveOwner(supabase);
+  const owners = await listOwners(supabase);
+  const matches = owners.filter((owner) => matchesAddress(owner, raw));
+  if (matches.length === 1) return matches[0];
+  if (matches.length > 1) {
+    throw new Error("More than one account matches that sender.");
   }
-  return resolveOwner(supabase);
+  throw new Error("No account uses that phone.");
 }
 
 export async function ownerForCall(

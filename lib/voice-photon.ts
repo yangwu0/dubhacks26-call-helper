@@ -37,7 +37,7 @@ export const photonVoice: VoiceProvider = {
     );
   },
   async callOwner(input: CallOwnerInput) {
-    const toNumber = input.toNumber?.trim() || required("OWNER_PHONE");
+    const toNumber = input.toNumber.trim();
     if (!toNumber.startsWith("+")) {
       throw new Error("Owner phone must be E.164, including the leading +");
     }

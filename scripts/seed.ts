@@ -18,7 +18,7 @@ function assertOk(error: { message: string } | null, step: string) {
 
 async function main() {
   const supabase = createServiceClient();
-  const ownerPhone = process.env.OWNER_PHONE || "+12065550100";
+  const ownerPhone = "+12065550100";
 
   const owner = await supabase.from("owners").upsert(
     {
