@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { openOwner } from "@/lib/account-crypto";
 import { normalizePhone } from "@/app/api/tools/db";
+import { projectAgentNumber } from "@/lib/photon-api";
 
 // Photon 2.0 (Beta). Free and Pro share one iMessage line per project.
 // Assigning a phone claims a seat on that line. It does not buy a new number.
@@ -30,6 +31,8 @@ type OwnerLineRow = {
 
 const READY_MESSAGE =
   "Text this number from your phone once. Sift can reply after that. Everyone uses this shared Photon line.";
+const VOICE_MESSAGE =
+  "Call this number, or text it BLOCK or CALL. Photon sends calls to ElevenLabs. Open the number there and choose your Sift agent.";
 
 function config(): PhotonConfig | null {
   const projectId = process.env.PHOTON_PROJECT_ID?.trim() ?? "";
@@ -137,6 +140,25 @@ export async function ensureOwnerLine(
   if (error) throw new Error(error.message);
   const owner = data as OwnerLineRow | null;
   if (!owner) return { status: "failed", number: "", message: "This account has no profile." };
+  const voiceNumber = await projectAgentNumber();
+  if (voiceNumber) {
+    const { data: taken, error: takenError } = await supabase
+      .from("owners")
+      .select("id")
+      .eq("sift_number", voiceNumber)
+      .neq("id", owner.id)
+      .limit(1);
+    if (takenError) throw new Error(takenError.message);
+    if (!taken?.length) {
+      if (owner.sift_number !== voiceNumber) {
+        await remember(supabase, owner.id, {
+          sift_number: voiceNumber,
+          photon_line_error: null,
+        });
+      }
+      return { status: "ready", number: voiceNumber, message: VOICE_MESSAGE };
+    }
+  }
   if (owner.sift_number) {
     return {
       status: "ready",

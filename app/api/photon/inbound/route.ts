@@ -1,16 +1,39 @@
 import { after } from "next/server";
 import { verifySecret } from "@/lib/auth";
 import { parseCommand } from "@/lib/commands";
-import { getSpectrumApp, handleInboundMessage } from "@/lib/photon";
+import { verifyPhotonWebhook } from "@/lib/photon-api";
+import { getSpectrumApp, handleInboundMessage, handlePhotonDelivery } from "@/lib/photon";
 
 function json(data: unknown, status = 200) {
   return Response.json(data, { status });
 }
 
-// Direct JSON is for local command checks. Photon deliveries use the
-// Spectrum HMAC (`X-Spectrum-Signature`) inside app.webhook().
-// https://photon.codes/docs/spectrum-ts/webhooks
+// Photon 2.0 posts message.received here with a Standard Webhooks signature.
+// Direct JSON with x-sift-secret is for local command checks.
+// https://photon.codes/docs/beta/api-reference
 export async function POST(req: Request) {
+  if (req.headers.get("webhook-signature")) {
+    const raw = await req.text();
+    if (!verifyPhotonWebhook(raw, req.headers)) {
+      return json({ error: "unauthorized" }, 401);
+    }
+    let body: unknown;
+    try {
+      body = JSON.parse(raw) as unknown;
+    } catch {
+      return json({ error: "invalid json" }, 400);
+    }
+    after(async () => {
+      try {
+        await handlePhotonDelivery(body);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "photon inbound failed";
+        console.error("photon inbound", message);
+      }
+    });
+    return json({ ok: true });
+  }
+
   const providedSecret = req.headers.get("x-sift-secret");
   if (providedSecret !== null && !verifySecret(req)) {
     return json({ error: "unauthorized" }, 401);
@@ -34,7 +57,7 @@ export async function POST(req: Request) {
       reply: async (message) => {
         replies.push(message);
       },
-        numberOverride:
+      numberOverride:
         body &&
         typeof body === "object" &&
         "number" in body &&

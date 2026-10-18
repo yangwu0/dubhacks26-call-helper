@@ -176,12 +176,14 @@ export async function ownerForCalledNumber(
   const { data, error } = await supabase
     .from("owners")
     .select(OWNER_COLUMNS)
-    .eq("sift_number", number)
-    .maybeSingle();
+    .eq("sift_number", number);
   if (error) throw new Error(error.message);
-  if (!data) return null;
-  const [owner] = await hydrateOwners(supabase, [data as OwnerRow]);
-  return owner ?? null;
+  const rows = (data ?? []) as OwnerRow[];
+  if (rows.length === 0) return null;
+  const owners = await hydrateOwners(supabase, rows);
+  if (owners.length === 1) return owners[0];
+  const withPhone = owners.filter((owner) => owner.phone.trim().startsWith("+"));
+  return withPhone.length === 1 ? withPhone[0] : null;
 }
 
 export async function ownerFromRequest(req: Request): Promise<OwnerRow | null> {

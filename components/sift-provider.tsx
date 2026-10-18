@@ -259,7 +259,7 @@ export function SiftProvider({ children }: { children: ReactNode }) {
   }, [router]);
 
   useEffect(() => {
-    if (!owner.id || owner.siftNumber) return;
+    if (!owner.id) return;
     let cancelled = false;
     let timer = 0;
 

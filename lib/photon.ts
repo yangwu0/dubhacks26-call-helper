@@ -1,12 +1,4 @@
-import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
-import {
-  Emoji,
-  Spectrum,
-  poll,
-  voice,
-  type Message,
-  type Space,
-} from "spectrum-ts";
+import { Emoji, Spectrum, type Message, type Space } from "spectrum-ts";
 import { imessage } from "spectrum-ts/providers/imessage";
 import { serviceClient } from "@/app/api/tools/db";
 import {
@@ -58,16 +50,9 @@ export function getSpectrumApp() {
   return appPromise;
 }
 
-async function ownerSpace(to: string) {
-  const app = await getSpectrumApp();
-  const im = imessage(app);
-  const user = await im.user(to);
-  return im.space.create(user);
-}
-
 export async function sendIMessage(to: string, body: string): Promise<void> {
-  const space = await ownerSpace(to);
-  await space.send(body);
+  const { sendPhotonText } = await import("./photon-api");
+  await sendPhotonText(to, body);
 }
 
 export function numberForPoll(pollMessageGuid: string | undefined): string | undefined {
@@ -80,32 +65,13 @@ export async function sendAlertWithPoll(
   body: string,
   callerNumber?: string | null,
 ): Promise<void> {
-  const space = await ownerSpace(to);
-  await space.send(body);
-  const sent = await space.send(poll("Block this number?", "Block", "Allow"));
-  if (sent && callerNumber) pollTargets.set(sent.id, callerNumber);
-  await maybeVoiceNote(space, body);
-}
-
-async function maybeVoiceNote(space: Space, text: string): Promise<void> {
-  const voiceId = process.env.ELEVENLABS_VOICE_ID?.trim();
-  const apiKey = process.env.ELEVENLABS_API_KEY?.trim();
-  if (!voiceId || !apiKey) return;
+  const { sendPhotonPoll, sendPhotonText } = await import("./photon-api");
+  await sendPhotonText(to, body);
   try {
-    const client = new ElevenLabsClient({ apiKey });
-    const audio = await client.textToSpeech.convert(voiceId, {
-      text,
-      outputFormat: "mp3_22050_32",
-    });
-    const bytes = Buffer.from(await new Response(audio).arrayBuffer());
-    await space.send(
-      voice(bytes, { name: "sift-alert.mp3", mimeType: "audio/mpeg" }),
-    );
+    const sent = await sendPhotonPoll(to, "Block this number?");
+    if (sent && callerNumber) pollTargets.set(sent, callerNumber);
   } catch (error) {
-    console.error(
-      "voice note",
-      error instanceof Error ? error.message : error,
-    );
+    console.error("poll", error instanceof Error ? error.message : error);
   }
 }
 
@@ -132,6 +98,59 @@ async function logMessage(
     body,
   });
   if (error) console.error("messages insert", error.message);
+}
+
+type PhotonCommand = {
+  address: string;
+  text: string;
+};
+
+function record(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object") return null;
+  return value as Record<string, unknown>;
+}
+
+function photonCommand(body: unknown): PhotonCommand | null {
+  const event = record(body);
+  if (!event || event.type !== "message.received") return null;
+  const message = record(record(event.data)?.object);
+  if (!message || (message.status && message.status !== "received")) return null;
+  const sender = record(message.sentBy);
+  const handle = typeof sender?.handle === "string" ? sender.handle : "";
+  if (!sender || sender.kind === "agent" || !handle) return null;
+  const id = typeof message.id === "string" ? message.id : "";
+  if (id && !remember(id)) return null;
+  const content = record(message.content);
+  if (!content) return null;
+  if (content.type === "text" && typeof content.text === "string") {
+    return { address: handle, text: content.text };
+  }
+  if (content.type !== "poll.vote" || !Array.isArray(content.selectedOptions)) return null;
+  const blocked = content.selectedOptions.some((option) => {
+    const row = record(option);
+    if (!row) return false;
+    const label = typeof row.text === "string" ? row.text.trim().toLowerCase() : "";
+    return row.id === "block" || label === "block";
+  });
+  return { address: handle, text: blocked ? "BLOCK" : "ALLOW" };
+}
+
+// Photon 2.0 message.received. The sender handle is the owner's phone.
+// https://api.photon.codes/v1/projects/{id}/webhooks/event-types/message.received/schema
+export async function handlePhotonDelivery(body: unknown): Promise<void> {
+  const command = photonCommand(body);
+  if (!command) return;
+  const reply = async (text: string) => {
+    const { sendPhotonText } = await import("./photon-api");
+    await sendPhotonText(command.address, text);
+    await logMessage("out", command.address, text);
+  };
+  await logMessage("in", command.address, command.text);
+  if (command.text === "ALLOW") {
+    await reply("Left them unblocked.");
+    return;
+  }
+  await parseCommand(command.text, { reply, address: command.address });
 }
 
 export async function handleInboundMessage(
