@@ -25,10 +25,8 @@ function formatHour(hour: number): string {
 export type WeeklyStats = {
   calls_handled: number;
   scams_blocked: number;
-  meetings_booked: number;
   important_forwarded: number;
   minutes_saved: number;
-  plan_vs_done: { planned: number; done: number; share: number };
   insight: string;
 };
 
@@ -67,34 +65,20 @@ export async function collectWeeklyStats(
       ? `Most scams called between ${formatHour(bestStart)} and ${formatHour((bestStart + 2) % 24)}.`
       : "No scam calls in the last 7 days.";
 
-  const { data: events, error: eventError } = await supabase
-    .from("calendar_events")
-    .select("status")
-    .eq("owner_id", owner.id)
-    .gte("starts_at", since);
-  if (eventError) throw new Error(eventError.message);
-  const list = events ?? [];
-  const done = list.filter((event) => event.status === "done").length;
-  const share = list.length === 0 ? 0 : done / list.length;
-
   return {
     calls_handled: rows.length,
     scams_blocked: scams.length,
-    meetings_booked: rows.filter((call) => call.action === "booked").length,
     important_forwarded: rows.filter((call) => call.action === "forwarded")
       .length,
     minutes_saved: rows.length * 4,
-    plan_vs_done: { planned: list.length, done, share },
     insight,
   };
 }
 
 export function formatWeeklyStats(stats: WeeklyStats): string {
-  const percent = Math.round(stats.plan_vs_done.share * 100);
   return [
-    `This week: ${stats.calls_handled} calls handled, ${stats.scams_blocked} scams blocked, ${stats.meetings_booked} meetings booked, ${stats.important_forwarded} important calls forwarded.`,
+    `This week: ${stats.calls_handled} calls handled, ${stats.scams_blocked} scams blocked, ${stats.important_forwarded} important calls forwarded.`,
     `About ${stats.minutes_saved} minutes saved (4 per screened call).`,
-    `Plan vs done: ${stats.plan_vs_done.done} of ${stats.plan_vs_done.planned} events marked done (${percent}%).`,
     stats.insight,
   ].join(" ");
 }

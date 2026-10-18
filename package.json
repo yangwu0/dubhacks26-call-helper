@@ -7,8 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed": "node --env-file=.env.local --import tsx scripts/seed.ts",
-    "seal-accounts": "node --env-file=.env.local --import tsx scripts/seal-accounts.ts"
+    "seal-accounts": "node --env-file=.env --import tsx scripts/seal-accounts.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",

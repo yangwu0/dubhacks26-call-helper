@@ -1,6 +1,6 @@
 import * as z from "zod";
 
-// Shared tool and webhook contracts. Note changes in docs/CHANGELOG.md.
+// Shared tool and webhook contracts.
 
 export const recommendedActionSchema = z.enum([
   "continue",
@@ -29,34 +29,6 @@ export const reportRiskRequestSchema = z.object({
 export const reportRiskResponseSchema = z.object({
   ok: z.boolean(),
   recommended_action: recommendedActionSchema,
-});
-
-export const freeSlotSchema = z.object({
-  start: z.string(),
-  end: z.string(),
-});
-
-export const checkAvailabilityRequestSchema = z.object({
-  conversation_id: z.string(),
-  date_from: z.string(),
-  date_to: z.string(),
-});
-
-export const checkAvailabilityResponseSchema = z.object({
-  free_slots: z.array(freeSlotSchema),
-});
-
-export const bookEventRequestSchema = z.object({
-  conversation_id: z.string(),
-  title: z.string(),
-  starts_at: z.string(),
-  ends_at: z.string(),
-  caller_name: z.string(),
-});
-
-export const bookEventResponseSchema = z.object({
-  ok: z.boolean(),
-  event_id: z.string(),
 });
 
 export const forwardCallRequestSchema = z.object({
@@ -164,15 +136,6 @@ export type VerifyCallerTargetResponse = z.infer<
 >;
 export type ReportRiskRequest = z.infer<typeof reportRiskRequestSchema>;
 export type ReportRiskResponse = z.infer<typeof reportRiskResponseSchema>;
-export type FreeSlot = z.infer<typeof freeSlotSchema>;
-export type CheckAvailabilityRequest = z.infer<
-  typeof checkAvailabilityRequestSchema
->;
-export type CheckAvailabilityResponse = z.infer<
-  typeof checkAvailabilityResponseSchema
->;
-export type BookEventRequest = z.infer<typeof bookEventRequestSchema>;
-export type BookEventResponse = z.infer<typeof bookEventResponseSchema>;
 export type ForwardCallRequest = z.infer<typeof forwardCallRequestSchema>;
 export type ForwardCallResponse = z.infer<typeof forwardCallResponseSchema>;
 export type TakeMessageRequest = z.infer<typeof takeMessageRequestSchema>;

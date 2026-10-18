@@ -10,12 +10,15 @@ import { useSiftDirectory } from "@/components/sift-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const LINKS = [
-  { href: "/dashboard/calls", label: "Log" },
+  { href: "/", label: "Log" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/dashboard/settings", label: "Settings" },
 ];
 
 function active(pathname: string, href: string) {
+  if (href === "/") {
+    return pathname === "/" || pathname.startsWith("/dashboard/calls");
+  }
   if (href === "/dashboard") return pathname === "/dashboard";
   return pathname === href || pathname.startsWith(`${href}/`);
 }
@@ -72,13 +75,13 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         <header className="mb-8 space-y-6">
           <div className="navbar min-h-0 rounded-none border-0 bg-transparent px-0 py-1 shadow-none md:rounded-box md:border md:border-base-300/50 md:bg-base-100 md:px-2 md:py-1.5 md:shadow-sm">
             <div className="navbar-start">
-              <Link href="/dashboard" className="flex items-center gap-2.5 px-1">
+              <Link href="/" className="flex items-center gap-2.5 px-1">
                 <SiftLogo size="md" />
                 <span>
                   <span className="font-display block text-lg font-bold leading-none">Sift</span>
                   <span className="mt-1 hidden text-xs text-base-content/70 md:block">
-                    {owner.siftNumber
-                      ? formatPhone(owner.siftNumber)
+                    {owner.photonNumber
+                      ? formatPhone(owner.photonNumber)
                       : owner.name || "Looking out for your line"}
                   </span>
                 </span>

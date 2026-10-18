@@ -79,7 +79,7 @@ async function finishTranscription(
     riskScore: call.risk_score ?? 0,
     targetMatch: call.target_match,
     action: call.action,
-    callerIntent: call.caller_intent,
+    summary: call.summary,
   });
 
   let summary: string;
@@ -89,7 +89,7 @@ async function finishTranscription(
     const written = await summarize(text, {
       caller_name: call.caller_name,
       caller_number: call.caller_number,
-      caller_intent: call.caller_intent,
+      caller_intent: call.summary,
       risk_score: call.risk_score,
       risk_reasons: asStringArray(call.risk_reasons),
       action: call.action,
@@ -98,7 +98,6 @@ async function finishTranscription(
     summary = formatPostCallMessage(written);
     classification = written.classification;
     if (written.suggested_action === "block") action = "blocked";
-    else if (written.suggested_action === "book") action = "booked";
     else if (written.suggested_action === "forward") action = "forwarded";
     else if (written.suggested_action === "take_message") action = "message_taken";
   } catch (error) {
@@ -112,7 +111,6 @@ async function finishTranscription(
   const { error } = await supabase
     .from("calls")
     .update({
-      status: "completed",
       ended_at: new Date().toISOString(),
       transcript: storedTurns.map((turn) => ({
         role: turn.role,
@@ -129,11 +127,11 @@ async function finishTranscription(
   if (isScam && call.caller_number && call.owner_id) {
     const reason =
       asStringArray(call.risk_reasons).join("; ") || "Classified as a scam";
-    const { error: blockError } = await supabase.from("blocked_numbers").upsert(
+    const { error: flagError } = await supabase.from("flagged_numbers").upsert(
       { number: call.caller_number, reason, owner_id: call.owner_id },
       { onConflict: "owner_id,number" },
     );
-    if (blockError) throw new Error(blockError.message);
+    if (flagError) throw new Error(flagError.message);
   }
 
   await insertEvent(supabase, call.id, "action", {
@@ -154,7 +152,6 @@ async function finishFailure(
   const { error } = await supabase
     .from("calls")
     .update({
-      status: "completed",
       ended_at: new Date().toISOString(),
     })
     .eq("id", call.id);

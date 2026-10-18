@@ -4,7 +4,7 @@ import {
   asStringArray,
   getCallByConversation,
   insertEvent,
-  isNumberBlocked,
+  isNumberFlagged,
   json,
   rejectIfUnauthorized,
   serviceClient,
@@ -32,15 +32,15 @@ export async function POST(req: Request) {
     const call = await getCallByConversation(supabase, conversation_id);
     if (!call) return json({ error: "unknown conversation" }, 404);
 
-    const blocked =
+    const flagged =
       call.owner_id && call.caller_number
-        ? await isNumberBlocked(supabase, call.owner_id, call.caller_number)
+        ? await isNumberFlagged(supabase, call.owner_id, call.caller_number)
         : false;
     const decision = applyRiskRules({
       reportedScore: score,
       previousScore: call.risk_score ?? 0,
       reasons,
-      isBlocked: blocked,
+      isBlocked: flagged,
       targetMatch: call.target_match,
     });
 
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
       risk_reasons: decision.rejectedDrop
         ? asStringArray(call.risk_reasons)
         : decision.reasons,
-      caller_intent,
+      summary: caller_intent,
     };
     if (caller_name) update.caller_name = caller_name;
 
@@ -66,7 +66,7 @@ export async function POST(req: Request) {
       caller_intent,
       caller_name: caller_name ?? null,
       rejected_drop: decision.rejectedDrop,
-      is_blocked: blocked,
+      is_blocked: flagged,
       recommended_action: decision.recommendedAction,
     });
 

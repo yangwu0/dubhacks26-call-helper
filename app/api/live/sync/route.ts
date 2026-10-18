@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     .from("calls")
     .select("id, conversation_id")
     .eq("owner_id", owner.id)
-    .eq("status", "in_progress")
+    .is("ended_at", null)
     .order("started_at", { ascending: false })
     .limit(5);
   if (error) return json({ error: error.message }, 500);

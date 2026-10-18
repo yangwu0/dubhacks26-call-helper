@@ -22,7 +22,6 @@ export const callSummarySchema = z.object({
   suggested_action: z.enum([
     "block",
     "forward",
-    "book",
     "take_message",
     "none",
   ]),
@@ -49,7 +48,7 @@ Rules:
 - risk_score is an integer from 0 to 100. Gift cards, arrest threats, and secrecy score high. A real office, school, landlord, or delivery scores low.
 - scam_type is a short label such as "irs" or "warranty", or null when this is not a scam.
 - key_details lists concrete facts from the call. Use an empty list when you have none.
-- suggested_action is block, forward, book, take_message, or none.
+- suggested_action is block, forward, take_message, or none.
 
 These three examples are samples of the output shape. They are not the call you are summarizing.
 
@@ -59,7 +58,7 @@ Transcript: The caller says they are the IRS, that Alex owes taxes, and that Ale
 
 Example 2, doctor's office.
 Transcript: Dr. Lee's office asks to move Thursday's appointment and offers Friday at 2pm. The agent books Friday at 2pm.
-{"classification":"legit_important","risk_score":8,"scam_type":null,"summary":"Dr. Lee's office called to move Thursday's appointment. Friday at 2pm is booked.","key_details":["Caller: Dr. Lee's office","New time: Friday 2pm"],"suggested_action":"book"}
+{"classification":"legit_important","risk_score":8,"scam_type":null,"summary":"Dr. Lee's office called to move Thursday's appointment to Friday at 2pm.","key_details":["Caller: Dr. Lee's office","New time: Friday 2pm"],"suggested_action":"forward"}
 
 Example 3, delivery.
 Transcript: A driver says a package will arrive today between 4 and 6pm. They do not ask for payment.
@@ -254,10 +253,8 @@ const weeklyParagraphSchema = z.object({
 export async function writeWeeklyParagraph(facts: {
   calls_handled: number;
   scams_blocked: number;
-  meetings_booked: number;
   important_forwarded: number;
   minutes_saved: number;
-  plan_vs_done: { planned: number; done: number; share: number };
   insight: string;
 }): Promise<string> {
   const client = getAnthropicClient();
@@ -295,9 +292,6 @@ export function formatPostCallMessage(summary: CallSummary): string {
   ) {
     const lead = detail.replace(/[.!?]$/, "");
     return `Blocked a likely scam (${summary.risk_score}%): ${lead}.`;
-  }
-  if (summary.suggested_action === "book") {
-    return detail;
   }
   if (summary.suggested_action === "forward") {
     return detail;

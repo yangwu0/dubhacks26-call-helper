@@ -7,7 +7,6 @@ export type SealableOwner = {
   name: string;
   aliases: string[] | null;
   phone: string;
-  imessage_handle: string | null;
 };
 
 function encryptionKey(): Buffer {
@@ -71,9 +70,6 @@ export function sealOwner<T extends SealableOwner>(row: T): T {
     ...row,
     name: sealText(row.name, fieldAad(row.id, "name")),
     phone: sealText(row.phone, fieldAad(row.id, "phone")),
-    imessage_handle: row.imessage_handle
-      ? sealText(row.imessage_handle, fieldAad(row.id, "imessage_handle"))
-      : row.imessage_handle,
     aliases: aliases.map((alias) => sealText(alias, fieldAad(row.id, "alias"))),
   };
 }
@@ -84,9 +80,6 @@ export function openOwner<T extends SealableOwner>(row: T): T {
     ...row,
     name: openText(row.name, fieldAad(row.id, "name")),
     phone: openText(row.phone, fieldAad(row.id, "phone")),
-    imessage_handle: row.imessage_handle
-      ? openText(row.imessage_handle, fieldAad(row.id, "imessage_handle"))
-      : row.imessage_handle,
     aliases: aliases.map((alias) => openText(alias, fieldAad(row.id, "alias"))),
   };
 }
@@ -95,7 +88,7 @@ export function openOwner<T extends SealableOwner>(row: T): T {
 // Already-sealed rows return null so reads do not rewrite them.
 export function ownerSealPatch(
   row: SealableOwner,
-): Pick<SealableOwner, "name" | "aliases" | "phone" | "imessage_handle"> | null {
+): Pick<SealableOwner, "name" | "aliases" | "phone"> | null {
   const sealed = sealOwner(row);
   const aliases = row.aliases ?? [];
   const sealedAliases = sealed.aliases ?? [];
@@ -105,7 +98,6 @@ export function ownerSealPatch(
   if (
     sealed.name === row.name &&
     sealed.phone === row.phone &&
-    sealed.imessage_handle === row.imessage_handle &&
     sameAliases
   ) {
     return null;
@@ -114,6 +106,5 @@ export function ownerSealPatch(
     name: sealed.name,
     aliases: sealedAliases,
     phone: sealed.phone,
-    imessage_handle: sealed.imessage_handle,
   };
 }

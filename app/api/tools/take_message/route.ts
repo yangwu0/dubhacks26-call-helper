@@ -32,7 +32,6 @@ export async function POST(req: Request) {
     const storedSummary = message.trim();
     const update: Record<string, unknown> = {
       caller_name,
-      caller_intent: storedSummary,
       summary: storedSummary,
     };
     if (!call.action || call.action === "none") {

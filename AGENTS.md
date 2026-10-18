@@ -14,10 +14,9 @@ When an unknown number calls the owner's Twilio number:
 4. It routes the call:
    - **Scam** (score 75 or higher): stay calm, gather details for 1 to 3 turns, refuse everything, end the call, auto-block the number.
    - **Legit and important** (scheduling, medical, school, landlord, delivery) with the name matching and risk under 40: bridge the owner into a conference with the caller. The owner hears a whisper summary first. This is the 3-way call.
-   - **Scheduling:** check availability, propose two slots, book the event.
    - **Legit but routine:** take a message.
 5. After the call, Claude writes a summary. It is stored on the call for the dashboard. (iMessage/SMS alerts and reply commands are disabled for now.)
-6. A weekly progress report (calls handled, scams blocked, meetings booked, time saved) is generated on demand for the dashboard.
+6. A weekly progress report (calls handled, scams blocked, time saved) is generated on demand for the dashboard.
 
 Stretch (only after everything above works):
 - **Scan:** the owner forwards a suspicious email, text, or bill photo to the Sift number and gets a verdict and a plain-English explanation.
@@ -52,76 +51,25 @@ Photon is the telephony front door. A Photon SMS/voice number receives the call 
 - Do not over-engineer. No auth system, no multi-tenant, no queues. A single hardcoded owner row is fine.
 - All webhook and tool endpoints verify the header `x-sift-secret === process.env.SIFT_WEBHOOK_SECRET`. The post-call webhook also verifies the ElevenLabs signature if feasible.
 - Never commit secrets. Keep `.env.example` current.
-- TypeScript types for the tool contracts live in `lib/contracts.ts`. Don't change them without telling the other workspaces (note it in `docs/CHANGELOG.md`).
-- Only touch files in your workspace's ownership list (listed in your workspace prompt). If you need a change elsewhere, write it in `docs/REQUESTS.md` and continue.
+- TypeScript types for the tool contracts live in `lib/contracts.ts`. Don't change them without coordinating with other workspaces.
+- Only touch files in your workspace's ownership list (listed in your workspace prompt).
 - Commit small and often. Commit message format: `ws1: forward-call tool`.
 - Every endpoint must respond in under 2 seconds. Anything slower must be async, because the caller is on a live phone call.
-- Safety and ethics are part of the product. The agent always discloses it is an AI. It announces recording. It never reveals the owner's private details (address, full schedule, financial info). It only shares free or busy availability. It never claims to be human.
+- Safety and ethics are part of the product. The agent always discloses it is an AI. It announces recording. It never reveals the owner's private details (address, schedule, financial info). It never claims to be human.
 
 ## Data model (Supabase; one migration `supabase/migrations/0001_init.sql`)
 
-```sql
-create table owners (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  aliases text[] default '{}',
-  phone text not null,           -- E.164, the owner's real phone
-  imessage_handle text,          -- phone or email used for iMessage
-  timezone text default 'America/Los_Angeles'
-);
+Postgres convention: **snake_case** plural tables, snake_case columns. See `supabase/migrations/0001_init.sql` for the full DDL.
 
-create table calls (
-  id uuid primary key default gen_random_uuid(),
-  owner_id uuid references owners(id),
-  conversation_id text unique,   -- ElevenLabs conversation id
-  call_sid text,                 -- Twilio call SID
-  caller_number text,
-  caller_name text,
-  claimed_target text,
-  target_match boolean,
-  status text default 'in_progress',   -- in_progress | completed
-  classification text default 'unknown', -- scam | legit_important | legit_routine | unknown
-  risk_score int default 0,
-  risk_reasons jsonb default '[]',
-  caller_intent text,
-  action text default 'none',    -- none | blocked | forwarded | message_taken | booked
-  summary text,
-  transcript jsonb,
-  started_at timestamptz default now(),
-  ended_at timestamptz
-);
+| Table | Purpose |
+|-------|---------|
+| `owners` | Profile; `id` is the Auth user id; PII encrypted server-side |
+| `calls` | One row per conversation (`conversation_id`, risk, summary, …) |
+| `call_events` | Timeline for a call (Realtime) |
+| `flagged_numbers` | Per-owner flag list `(owner_id, number)` |
+| `contacts` | Per-owner trusted numbers |
 
-create table call_events (
-  id bigint generated always as identity primary key,
-  call_id uuid references calls(id) on delete cascade,
-  type text not null,            -- transcript | risk | tool | action | system
-  payload jsonb default '{}',
-  created_at timestamptz default now()
-);
-
-create table blocked_numbers (number text primary key, reason text, created_at timestamptz default now());
-create table contacts (number text primary key, name text, trusted boolean default true);
-
-create table calendar_events (
-  id uuid primary key default gen_random_uuid(),
-  owner_id uuid references owners(id),
-  title text, starts_at timestamptz, ends_at timestamptz,
-  source text default 'manual',  -- manual | sift
-  status text default 'planned', -- planned | done | missed
-  call_id uuid references calls(id)
-);
-
-create table messages (
-  id bigint generated always as identity primary key,
-  direction text,                -- out | in
-  channel text,                  -- imessage | sms
-  address text, body text,
-  call_id uuid references calls(id),
-  created_at timestamptz default now()
-);
-
-alter publication supabase_realtime add table calls, call_events;
-```
+Realtime publication: `calls`, `call_events`.
 
 ## Tool contracts (ElevenLabs → our server)
 
@@ -131,8 +79,6 @@ All are `POST /api/tools/<name>`, JSON body, header `x-sift-secret`. Every body 
 |---|---|---|
 | `verify_caller_target` | `{conversation_id, claimed_target}` | `{match: boolean, confidence: number}` (fuzzy match vs owner name and aliases; update `calls.target_match`) |
 | `report_risk` | `{conversation_id, score, reasons: string[], caller_intent, caller_name?}` | `{ok, recommended_action: "continue"|"end_as_scam"|"may_forward"}` (server applies its own rules too: blocked number or score 75 or higher → `end_as_scam`) |
-| `check_availability` | `{conversation_id, date_from, date_to}` | `{free_slots: {start,end}[]}` (only free windows, never event details) |
-| `book_event` | `{conversation_id, title, starts_at, ends_at, caller_name}` | `{ok, event_id}` |
 | `forward_call` | `{conversation_id, reason, urgency}` | `{ok, message}`. The server REFUSES if `target_match` is false or `risk_score >= 40`. |
 | `take_message` | `{conversation_id, caller_name, callback_number, message}` | `{ok}` |
 
@@ -156,7 +102,7 @@ Dark, clean, sieve-themed branding ("Sift": noise goes in, only the real calls c
 - `/` **Live**: big animated risk meter, live transcript, current action badge, last 5 calls. Uses Supabase Realtime.
 - `/calls`, `/calls/[id]`: call log and detail (transcript, risk reasons timeline, summary).
 - `/report`: weekly report with stat tiles and the Claude-written paragraph.
-- `/settings`: owner name, aliases, phone, blocked numbers.
+- `/settings`: owner name, aliases, phone, flagged numbers.
 - **Demo mode toggle:** a "Simulate scam call" button that replays a scripted sequence of `call_events` and risk updates. This is our fallback if live calls fail during recording.
 
 ## Definition of done (priority order)
@@ -166,9 +112,8 @@ Dark, clean, sieve-themed branding ("Sift": noise goes in, only the real calls c
 3. Scam path: ends the call, blocks the number, sends the summary. ✔ must work
 4. Legit-important path: owner's phone rings, conference bridges. ✔ must work
 5. iMessage summary and reply commands. ○ deferred (messaging removed for now)
-6. Scheduling: free slots and booked event. ○ should work
-7. Weekly report (dashboard JSON). ○ should work
-8. Scan / bill decoder. ○ stretch
+6. Weekly report (dashboard JSON). ○ should work
+7. Scan / bill decoder. ○ stretch
 
 <!-- BEGIN:nextjs-agent-rules -->
 

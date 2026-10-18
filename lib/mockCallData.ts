@@ -22,13 +22,11 @@ export type CallRecord = {
   id: string;
   callerNumber: string;
   callerName: string;
-  claimedTarget: string;
   targetMatch: boolean | null;
   status: "in_progress" | "completed";
   classification: "scam" | "legit_important" | "legit_routine" | "unknown";
   riskScore: number;
   riskReasons: string[];
-  callerIntent: string;
   action: "none" | "blocked" | "forwarded" | "message_taken" | "booked";
   summary: string;
   transcript: TranscriptLine[];
@@ -42,10 +40,10 @@ export type OwnerProfile = {
   name: string;
   aliases: string[];
   phone: string;
-  siftNumber: string;
+  photonNumber: string;
 };
 
-export type BlockedNumber = {
+export type FlaggedNumber = {
   number: string;
   reason: string;
   createdAt: string;
@@ -140,10 +138,10 @@ export const MOCK_OWNER: OwnerProfile = {
   name: "Alex Kim",
   aliases: ["Alex", "Alexander Kim"],
   phone: "+12065550100",
-  siftNumber: "",
+  photonNumber: "",
 };
 
-export const MOCK_BLOCKED: BlockedNumber[] = [
+export const MOCK_FLAGGED: FlaggedNumber[] = [
   {
     number: "+18005550199",
     reason: "IRS impersonation. Demanded gift cards.",
@@ -161,7 +159,6 @@ export const MOCK_CALLS: CallRecord[] = [
     id: "a1e00000-0000-4000-8000-000000000101",
     callerNumber: "+18005550199",
     callerName: "Officer Grant",
-    claimedTarget: "Alex Kim",
     targetMatch: true,
     status: "completed",
     classification: "scam",
@@ -171,7 +168,6 @@ export const MOCK_CALLS: CallRecord[] = [
       "Threatened immediate arrest",
       "Demanded payment in gift cards",
     ],
-    callerIntent: "Collect a fake tax debt",
     action: "blocked",
     summary:
       "Caller claimed to be the IRS and told Alex to buy gift cards to avoid arrest. Sift refused and blocked the number.",
@@ -229,7 +225,6 @@ export const MOCK_CALLS: CallRecord[] = [
     id: "a1e00000-0000-4000-8000-000000000102",
     callerNumber: "+18005550288",
     callerName: "Vehicle Services",
-    claimedTarget: "the homeowner",
     targetMatch: false,
     status: "completed",
     classification: "scam",
@@ -239,7 +234,6 @@ export const MOCK_CALLS: CallRecord[] = [
       "Would not name who they were calling for",
       "Asked to install remote-access software",
     ],
-    callerIntent: "Sell a fake vehicle warranty",
     action: "blocked",
     summary:
       "Caller pushed an expiring car warranty and asked Alex to install remote software. Sift ended the call and blocked the number.",
@@ -279,13 +273,11 @@ export const MOCK_CALLS: CallRecord[] = [
     id: "a1e00000-0000-4000-8000-000000000103",
     callerNumber: "+12065551010",
     callerName: "Dana Ruiz",
-    claimedTarget: "Alex Kim",
     targetMatch: true,
     status: "completed",
     classification: "legit_important",
     riskScore: 18,
     riskReasons: ["Named Alex Kim", "Building maintenance, not a payment demand"],
-    callerIntent: "Schedule a kitchen-leak repair",
     action: "forwarded",
     summary:
       "Dana Ruiz from the building called about a kitchen leak. The name matched and the risk was low, so Sift bridged Alex into the call.",
@@ -317,13 +309,11 @@ export const MOCK_CALLS: CallRecord[] = [
     id: "a1e00000-0000-4000-8000-000000000104",
     callerNumber: "+12065551020",
     callerName: "Cascade Pharmacy",
-    claimedTarget: "Alex Kim",
     targetMatch: true,
     status: "completed",
     classification: "legit_routine",
     riskScore: 22,
     riskReasons: ["Named Alex Kim", "Routine prescription notice"],
-    callerIntent: "Prescription is ready for pickup",
     action: "message_taken",
     summary:
       "Cascade Pharmacy said Alex's prescription is ready for pickup today. Sift took the message instead of interrupting.",

@@ -60,7 +60,6 @@ export async function POST(req: Request) {
     const { error } = await supabase
       .from("calls")
       .update({
-        claimed_target,
         target_match: result.match,
         ...(result.match && owner ? { owner_id: owner.id } : {}),
       })

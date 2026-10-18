@@ -9,9 +9,8 @@ export type OwnerRow = {
   name: string;
   aliases: string[] | null;
   phone: string;
-  imessage_handle: string | null;
   timezone: string | null;
-  sift_number: string | null;
+  photon_number: string | null;
 };
 
 export type CallRow = {
@@ -21,16 +20,15 @@ export type CallRow = {
   call_sid: string | null;
   caller_number: string | null;
   caller_name: string | null;
-  claimed_target: string | null;
   target_match: boolean | null;
-  status: string | null;
   classification: string | null;
   risk_score: number | null;
   risk_reasons: unknown;
-  caller_intent: string | null;
   action: string | null;
   summary: string | null;
   transcript: unknown;
+  started_at?: string | null;
+  ended_at?: string | null;
 };
 
 export function json(data: unknown, status = 200) {
@@ -61,8 +59,7 @@ export function asStringArray(value: unknown): string[] {
   return value.filter((item): item is string => typeof item === "string");
 }
 
-const OWNER_COLUMNS =
-  "id, name, aliases, phone, imessage_handle, timezone, sift_number";
+const OWNER_COLUMNS = "id, name, aliases, phone, timezone, photon_number";
 
 function samePhone(left: string, right: string): boolean {
   if (!left.trim() || !right.trim()) return false;
@@ -70,9 +67,6 @@ function samePhone(left: string, right: string): boolean {
 }
 
 function matchesAddress(owner: OwnerRow, address: string): boolean {
-  const raw = address.trim().toLowerCase();
-  if (!raw) return false;
-  if (owner.imessage_handle?.trim().toLowerCase() === raw) return true;
   return samePhone(owner.phone, address);
 }
 
@@ -115,19 +109,12 @@ export async function getOwnerById(
   return owner ?? null;
 }
 
+/** Same as getOwnerById — owners.id is the Auth user id. */
 export async function getOwnerByUserId(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<OwnerRow | null> {
-  const { data, error } = await supabase
-    .from("owners")
-    .select(OWNER_COLUMNS)
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  if (!data) return null;
-  const [owner] = await hydrateOwners(supabase, [data as OwnerRow]);
-  return owner ?? null;
+  return getOwnerById(supabase, userId);
 }
 
 // Used when a request has no signed-in user and no sender phone.
@@ -176,7 +163,7 @@ export async function ownerForCalledNumber(
   const { data, error } = await supabase
     .from("owners")
     .select(OWNER_COLUMNS)
-    .eq("sift_number", number);
+    .eq("photon_number", number);
   if (error) throw new Error(error.message);
   const rows = (data ?? []) as OwnerRow[];
   if (rows.length === 0) return null;
@@ -309,14 +296,14 @@ export async function insertEvent(
   if (error) throw new Error(error.message);
 }
 
-export async function isNumberBlocked(
+export async function isNumberFlagged(
   supabase: SupabaseClient,
   ownerId: string,
   number: string,
 ): Promise<boolean> {
   const normalized = normalizePhone(number);
   const { data, error } = await supabase
-    .from("blocked_numbers")
+    .from("flagged_numbers")
     .select("number")
     .eq("owner_id", ownerId)
     .in("number", normalized === number ? [number] : [number, normalized])

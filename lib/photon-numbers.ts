@@ -1,8 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { projectAgentNumber } from "@/lib/photon-api";
+import { DEMO_PHOTON_NUMBER } from "@/lib/owner-phone";
 
-// Photon already owns the calling number and routes it to ElevenLabs.
-// This only remembers that number on the account so the dashboard can show it.
+// Demo: use the hardcoded Photon agent number instead of looking it up live.
 // https://photon.codes/docs/beta/cookbooks/voice/elevenlabs
 
 export type LineStatus = "ready" | "pending" | "failed" | "unconfigured";
@@ -13,22 +12,8 @@ export type OwnerLine = {
   message: string;
 };
 
-type OwnerLineRow = {
-  id: string;
-  sift_number: string | null;
-};
-
 const VOICE_MESSAGE =
   "Everyone calls this number. Sift screens the caller and logs the call on your dashboard.";
-
-async function remember(
-  supabase: SupabaseClient,
-  ownerId: string,
-  patch: Record<string, string | null>,
-) {
-  const { error } = await supabase.from("owners").update(patch).eq("id", ownerId);
-  if (error) throw new Error(error.message);
-}
 
 export async function ensureOwnerLine(
   supabase: SupabaseClient,
@@ -36,27 +21,23 @@ export async function ensureOwnerLine(
 ): Promise<OwnerLine> {
   const { data, error } = await supabase
     .from("owners")
-    .select("id, sift_number")
+    .select("id, photon_number")
     .eq("id", ownerId)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  const owner = data as OwnerLineRow | null;
-  if (!owner) return { status: "failed", number: "", message: "This account has no profile." };
+  if (!data) return { status: "failed", number: "", message: "This account has no profile." };
 
-  const voiceNumber = await projectAgentNumber();
-  if (!voiceNumber) {
-    return {
-      status: "unconfigured",
-      number: owner.sift_number ?? "",
-      message: "Photon has no calling number yet.",
-    };
+  if (data.photon_number !== DEMO_PHOTON_NUMBER) {
+    const { error: updateError } = await supabase
+      .from("owners")
+      .update({ photon_number: DEMO_PHOTON_NUMBER })
+      .eq("id", ownerId);
+    if (updateError) throw new Error(updateError.message);
   }
 
-  if (owner.sift_number !== voiceNumber) {
-    await remember(supabase, owner.id, {
-      sift_number: voiceNumber,
-      photon_line_error: null,
-    });
-  }
-  return { status: "ready", number: voiceNumber, message: VOICE_MESSAGE };
+  return {
+    status: "ready",
+    number: DEMO_PHOTON_NUMBER,
+    message: VOICE_MESSAGE,
+  };
 }

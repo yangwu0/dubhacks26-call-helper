@@ -52,7 +52,7 @@ export function classifyCall(input: {
   riskScore: number;
   targetMatch: boolean | null;
   action: string | null;
-  callerIntent: string | null;
+  summary: string | null;
 }): { classification: string; action: string } {
   if (input.riskScore >= SCAM_SCORE) {
     return { classification: "scam", action: "blocked" };
@@ -63,7 +63,7 @@ export function classifyCall(input: {
   const important =
     input.targetMatch === true &&
     input.riskScore < FORWARD_MAX_SCORE &&
-    IMPORTANT_INTENT.test(input.callerIntent ?? "");
+    IMPORTANT_INTENT.test(input.summary ?? "");
   if (important) {
     return {
       classification: "legit_important",

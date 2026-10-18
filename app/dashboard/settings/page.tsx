@@ -19,14 +19,14 @@ import {
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { owner, blocked, lineNote, lineStatus, saveOwner, addBlocked, removeBlocked } =
+  const { owner, flagged, lineNote, lineStatus, saveOwner, addFlagged, removeFlagged } =
     useSiftDirectory();
   const [name, setName] = useState(owner.name);
   const [aliases, setAliases] = useState(owner.aliases);
   const [phone, setPhone] = useState(owner.phone);
   const [aliasDraft, setAliasDraft] = useState("");
-  const [blockNumber, setBlockNumber] = useState("");
-  const [blockReason, setBlockReason] = useState("");
+  const [flagNumber, setFlagNumber] = useState("");
+  const [flagReason, setFlagReason] = useState("");
   const [note, setNote] = useState("");
   const dirty = useRef(false);
   const loadedOwner = useRef(owner.id);
@@ -39,8 +39,8 @@ export default function SettingsPage() {
     setAliases(owner.aliases);
     setPhone(owner.phone);
     setAliasDraft("");
-    setBlockNumber("");
-    setBlockReason("");
+    setFlagNumber("");
+    setFlagReason("");
     setNote("");
   }, [owner]);
 
@@ -67,15 +67,15 @@ export default function SettingsPage() {
     setAliasDraft("");
   }
 
-  async function onBlock(event: FormEvent) {
+  async function onFlag(event: FormEvent) {
     event.preventDefault();
-    const number = blockNumber.trim();
+    const number = flagNumber.trim();
     if (!number) return;
-    const result = await addBlocked(number, blockReason.trim() || "Blocked from settings");
+    const result = await addFlagged(number, flagReason.trim() || "Flagged from settings");
     setNote(result.message);
     if (result.ok) {
-      setBlockNumber("");
-      setBlockReason("");
+      setFlagNumber("");
+      setFlagReason("");
     }
   }
 
@@ -89,10 +89,10 @@ export default function SettingsPage() {
 
       <div className={`${cardClass} mt-6`}>
         <div className="card-body gap-3">
-          {owner.siftNumber ? (
+          {owner.photonNumber ? (
             <>
               <h2 className={cardHeading}>Your Sift number</h2>
-              <p className="font-display text-2xl font-bold">{formatPhone(owner.siftNumber)}</p>
+              <p className="font-display text-2xl font-bold">{formatPhone(owner.photonNumber)}</p>
               <p className={metaMuted}>
                 {lineNote ||
                   "Everyone calls this number. Sift screens the caller and logs the call here."}
@@ -207,12 +207,12 @@ export default function SettingsPage() {
 
         <section className={cardClass}>
           <div className="card-body gap-4">
-            <h2 className={cardHeading}>Blocked numbers</h2>
+            <h2 className={cardHeading}>Flagged numbers</h2>
             <ul className="space-y-3">
-              {blocked.length === 0 ? (
-                <li className={metaMuted}>Nothing is blocked.</li>
+              {flagged.length === 0 ? (
+                <li className={metaMuted}>Nothing is flagged.</li>
               ) : (
-                blocked.map((item) => (
+                flagged.map((item) => (
                   <li
                     key={item.number}
                     className="flex items-start justify-between gap-3 rounded-box bg-base-200/60 px-4 py-3"
@@ -224,7 +224,7 @@ export default function SettingsPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        void removeBlocked(item.number).then((result) => setNote(result.message));
+                        void removeFlagged(item.number).then((result) => setNote(result.message));
                       }}
                       className="btn btn-ghost btn-sm text-error"
                     >
@@ -234,13 +234,13 @@ export default function SettingsPage() {
                 ))
               )}
             </ul>
-            <form onSubmit={onBlock} className="space-y-4 border-t border-base-300/50 pt-4">
+            <form onSubmit={onFlag} className="space-y-4 border-t border-base-300/50 pt-4">
               <fieldset className="fieldset">
                 <legend className="fieldset-legend font-bold">Add a number</legend>
                 <input
-                  id="block-number"
-                  value={blockNumber}
-                  onChange={(event) => setBlockNumber(event.target.value)}
+                  id="flag-number"
+                  value={flagNumber}
+                  onChange={(event) => setFlagNumber(event.target.value)}
                   placeholder="+18005550123"
                   className={inputClass}
                 />
@@ -248,15 +248,15 @@ export default function SettingsPage() {
               <fieldset className="fieldset">
                 <legend className="fieldset-legend font-bold">Reason</legend>
                 <input
-                  id="block-reason"
-                  value={blockReason}
-                  onChange={(event) => setBlockReason(event.target.value)}
+                  id="flag-reason"
+                  value={flagReason}
+                  onChange={(event) => setFlagReason(event.target.value)}
                   placeholder="Why should Sift refuse this caller?"
                   className={inputClass}
                 />
               </fieldset>
               <button type="submit" className={btnDanger}>
-                Block number
+                Flag number
               </button>
             </form>
           </div>

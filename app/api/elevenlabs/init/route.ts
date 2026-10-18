@@ -1,11 +1,12 @@
 import { elevenLabsInitRequestSchema } from "@/lib/contracts";
+import { DEMO_PHOTON_NUMBER } from "@/lib/owner-phone";
 import {
   getCallByConversation,
   getOwnerById,
   insertEvent,
   ownerForCalledNumber,
   isKnownContact,
-  isNumberBlocked,
+  isNumberFlagged,
   json,
   normalizePhone,
   rejectIfUnauthorized,
@@ -43,6 +44,16 @@ export async function POST(req: Request) {
     let callId = existing?.id ?? "";
     let ownerId = existing?.owner_id ?? matched?.id ?? null;
     if (existing?.owner_id) ownerId = existing.owner_id;
+    // Demo fallback: attach orphaned inbound calls to the shared Photon line owner.
+    if (!ownerId) {
+      const { data: demoOwner } = await supabase
+        .from("owners")
+        .select("id")
+        .eq("photon_number", DEMO_PHOTON_NUMBER)
+        .limit(1)
+        .maybeSingle();
+      ownerId = demoOwner?.id ?? null;
+    }
     if (!existing) {
       const { data: created, error } = await supabase
         .from("calls")
@@ -69,9 +80,9 @@ export async function POST(req: Request) {
     }
 
     const owner = ownerId ? await getOwnerById(supabase, ownerId) : null;
-    const [blocked, known] = owner
+    const [flagged, known] = owner
       ? await Promise.all([
-          isNumberBlocked(supabase, owner.id, callerNumber),
+          isNumberFlagged(supabase, owner.id, callerNumber),
           isKnownContact(supabase, owner.id, callerNumber),
         ])
       : [false, false];
@@ -81,7 +92,7 @@ export async function POST(req: Request) {
       caller_number: callerNumber,
       called_number,
       call_sid: callSid,
-      is_blocked: blocked,
+      is_blocked: flagged,
       is_known_contact: known,
       owner_id: owner?.id ?? null,
     });
@@ -91,7 +102,7 @@ export async function POST(req: Request) {
       dynamic_variables: {
         owner_name: owner?.name ?? "this number",
         caller_number: callerNumber,
-        is_blocked: blocked,
+        is_blocked: flagged,
         is_known_contact: known,
         call_sid: callSid,
       },
