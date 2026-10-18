@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { formatPhone } from "@/components/format";
 import { useSiftDirectory } from "@/components/sift-provider";
 import {
   btnDanger,
   btnPrimary,
+  cardBodyClass,
   cardClass,
   cardHeading,
   inputClass,
@@ -76,9 +78,9 @@ export default function SettingsPage() {
         {usingSample ? "Sample profile, until the directory connects." : "Connected to your directory."}
       </p>
 
-      <div className="mt-6 grid gap-5 xl:grid-cols-2">
+      <div className="mt-8 grid gap-6 xl:grid-cols-2">
         <form onSubmit={onSave} className={cardClass}>
-          <div className="card-body gap-4">
+          <div className={cardBodyClass}>
             <h2 className={cardHeading}>Owner</h2>
             <fieldset className="fieldset">
               <legend className="fieldset-legend font-bold">Name</legend>
@@ -116,21 +118,21 @@ export default function SettingsPage() {
                       markDirty();
                       setAliases((current) => current.filter((item) => item !== alias));
                     }}
-                    className="badge badge-lg badge-neutral gap-1 font-semibold"
+                    className="badge badge-lg badge-neutral gap-1 rounded-full font-semibold"
                   >
                     {alias}
                     <span aria-hidden>×</span>
                   </button>
                 ))}
               </div>
-              <div className="join mt-3 w-full">
+              <div className="mt-3 flex gap-2">
                 <input
                   value={aliasDraft}
                   onChange={(event) => setAliasDraft(event.target.value)}
                   placeholder="Add an alias"
-                  className="input input-bordered join-item min-w-0 flex-1 bg-base-200/30"
+                  className={inputClass}
                 />
-                <button type="button" onClick={addAlias} className="btn btn-neutral join-item">
+                <button type="button" onClick={addAlias} className="btn btn-neutral rounded-2xl">
                   Add
                 </button>
               </div>
@@ -142,7 +144,7 @@ export default function SettingsPage() {
         </form>
 
         <section className={cardClass}>
-          <div className="card-body gap-4">
+          <div className={cardBodyClass}>
             <h2 className={cardHeading}>Blocked numbers</h2>
             <ul className="space-y-3">
               {blocked.length === 0 ? (
@@ -151,7 +153,7 @@ export default function SettingsPage() {
                 blocked.map((item) => (
                   <li
                     key={item.number}
-                    className="flex items-start justify-between gap-3 rounded-box bg-base-200/60 px-4 py-3"
+                    className="flex items-start justify-between gap-3 rounded-2xl bg-base-100 px-4 py-3"
                   >
                     <div>
                       <p className="font-semibold">{formatPhone(item.number)}</p>
@@ -199,6 +201,11 @@ export default function SettingsPage() {
         </section>
       </div>
       {note ? <p className={`mt-4 ${metaMuted}`}>{note}</p> : null}
+      <div className="mt-8">
+        <Link href="/" className="btn btn-ghost rounded-2xl font-semibold">
+          Sign out
+        </Link>
+      </div>
     </div>
   );
 }

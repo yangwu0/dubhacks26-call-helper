@@ -15,13 +15,15 @@ export function SiftLogo({ size = "md", showWordmark = false, className = "" }: 
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
       <span
-        className={`flex shrink-0 items-center justify-center rounded-lg bg-primary font-display font-bold leading-none text-primary-content ${s.box}`}
+        className={`flex shrink-0 items-center justify-center rounded-2xl bg-primary font-semibold leading-none text-primary-content shadow-sm ${s.box}`}
         aria-hidden
       >
         S
       </span>
       {showWordmark ? (
-        <span className={`font-display font-bold leading-tight text-base-content ${s.word}`}>Sift</span>
+        <span className={`font-display font-bold leading-tight tracking-tight text-base-content ${s.word}`}>
+          Sift
+        </span>
       ) : null}
     </span>
   );

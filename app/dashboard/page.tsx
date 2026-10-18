@@ -1,106 +1,60 @@
 "use client";
 
-import { ActionBadge, badgeForCall } from "@/components/action-badge";
-import { CallStrip } from "@/components/call-strip";
-import { DemoToggle } from "@/components/demo-toggle";
-import { formatPhone } from "@/components/format";
-import { LiveTranscript } from "@/components/live-transcript";
-import { RiskGauge } from "@/components/risk-gauge";
+import { useState } from "react";
+import { formatSaved, minutesBetween } from "@/components/format";
 import { useSiftDirectory } from "@/components/sift-provider";
-import {
-  bodyMuted,
-  cardClass,
-  labelCaps,
-  pageEyebrow,
-  pageTitle,
-  riskPill,
-  sectionTitle,
-} from "@/components/styles";
-import { useDemoPlayback } from "@/components/use-demo-playback";
-import type { RoutingStatus, TranscriptLine } from "@/lib/mockCallData";
+import { cardClass } from "@/components/styles";
+import type { CallRecord } from "@/lib/mockCallData";
 
-function NameCheck({ match }: { match: boolean | null }) {
-  if (match === true) {
-    return <span className={`${riskPill.safe} badge-md`}>Name check: match</span>;
-  }
-  if (match === false) {
-    return <span className={`${riskPill.scam} badge-md`}>Name check: mismatch</span>;
-  }
-  return (
-    <span className="badge badge-neutral badge-soft badge-md font-bold">Name check: still listening</span>
-  );
+function tally(calls: CallRecord[]) {
+  return {
+    calls: calls.length,
+    blocked: calls.filter((call) => call.action === "blocked" || call.classification === "scam").length,
+    minutes: calls.reduce((sum, call) => sum + minutesBetween(call.startedAt, call.endedAt), 0),
+  };
 }
 
-export default function LivePage() {
-  const demo = useDemoPlayback();
+export default function DashboardPage() {
   const { calls } = useSiftDirectory();
-  const live = calls.find((call) => call.status === "in_progress") ?? null;
-  const showingDemo = demo.engaged;
-  const showingLive = !showingDemo && live !== null;
-
-  const score = showingDemo ? demo.score : live?.riskScore ?? 0;
-  const reasons = showingDemo ? demo.reasons : live?.riskReasons ?? [];
-  const status: RoutingStatus = showingDemo
-    ? demo.action
-    : live
-      ? badgeForCall(live)
-      : "waiting";
-  const lines: TranscriptLine[] = showingDemo ? demo.lines : live?.transcript ?? [];
-  const callerName = showingDemo
-    ? demo.callerName
-    : live?.callerName ?? "No call right now";
-  const callerNumber = showingDemo ? demo.callerNumber : live?.callerNumber ?? "";
-  const claimedTarget = showingDemo ? demo.claimedTarget : live?.claimedTarget ?? "";
-  const targetMatch = showingDemo ? demo.targetMatch : live?.targetMatch ?? null;
-  const intent = showingDemo ? "" : live?.callerIntent ?? "";
+  const [available, setAvailable] = useState(true);
+  const stats = tally(calls);
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className={pageEyebrow}>Right now</p>
-          <h1 className={pageTitle}>Live</h1>
-        </div>
-        <DemoToggle running={demo.running} onToggle={demo.toggle} />
-      </div>
-
-      <div className="grid items-stretch gap-5 lg:grid-cols-2">
-        <section className={`${cardClass} bg-base-100`}>
-          <div className="card-body items-center text-center">
-            <p className={labelCaps}>
-              {showingDemo || showingLive ? "Incoming" : "All quiet"}
-            </p>
-            <h2 className={sectionTitle}>{callerName}</h2>
-            <p className={bodyMuted}>
-              {callerNumber ? formatPhone(callerNumber) : "Sift will pick up when someone calls."}
-            </p>
-            {(showingDemo || showingLive) && (
-              <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
-                <NameCheck match={targetMatch} />
-                {claimedTarget ? (
-                  <span className="badge badge-neutral badge-soft">Asking for {claimedTarget}</span>
-                ) : null}
-              </div>
-            )}
-            {intent ? <p className={`max-w-sm ${bodyMuted}`}>{intent}</p> : null}
-            <div className="my-4">
-              <RiskGauge score={score} />
+    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center gap-6 py-4 md:justify-center md:gap-16 md:py-10">
+      <section className="order-1 flex w-full flex-col gap-3 md:order-2 md:grid md:grid-cols-3 md:gap-4">
+        {[
+          { label: "calls", value: String(stats.calls) },
+          { label: "blocked", value: String(stats.blocked) },
+          { label: "time saved", value: formatSaved(stats.minutes) },
+        ].map((item) => (
+          <article key={item.label} className={cardClass}>
+            <div className="card-body items-start gap-1 px-4 py-3 text-left md:items-center md:p-5 md:text-center">
+              <p className="text-sm font-medium text-base-content/55">{item.label}</p>
+              <p className="text-2xl font-semibold tabular-nums tracking-tight md:text-3xl">{item.value}</p>
             </div>
-            <ActionBadge status={status} />
-            {reasons.length > 0 ? (
-              <ul className="mt-4 flex max-w-md flex-wrap justify-center gap-2">
-                {reasons.map((reason) => (
-                  <li key={reason}>
-                    <span className="badge badge-outline badge-sm font-normal">{reason}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
-        </section>
-        <LiveTranscript lines={lines} />
+          </article>
+        ))}
+      </section>
+
+      <div className="order-2 flex w-full flex-1 items-center justify-center md:order-1 md:w-auto md:flex-none">
+      <button
+        type="button"
+        aria-pressed={available}
+        onClick={() => setAvailable((current) => !current)}
+        className={`flex size-64 flex-col items-center justify-center gap-2 rounded-full px-8 text-center md:size-80 ${
+          available
+            ? "bg-primary text-primary-content shadow-[0_8px_30px_rgb(28,43,30,0.22)]"
+            : "sift-elevate bg-base-200 text-base-content"
+        }`}
+      >
+        <span className="text-4xl font-semibold tracking-tight sm:text-5xl">
+          {available ? "Available" : "Busy"}
+        </span>
+        <span className="max-w-40 text-sm leading-snug opacity-80">
+          {available ? "Calls come to you" : "Do not disturb"}
+        </span>
+      </button>
       </div>
-      <CallStrip calls={calls} />
     </div>
   );
 }

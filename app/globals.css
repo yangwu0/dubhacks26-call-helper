@@ -5,45 +5,45 @@
   logs: false;
 }
 
-/* Forest grove — `sift` = light (custom name avoids daisy/shadcn default `light` clash) */
+/* Sift — sage page, white cards, forest green accent (`sift` = light) */
 
 @plugin "daisyui/theme" {
   name: "sift";
   default: true;
   color-scheme: light;
 
-  --color-base-100: #eaf2eb;
-  --color-base-200: #dce8de;
-  --color-base-300: #b8ccb9;
+  --color-base-100: #dce8df;
+  --color-base-200: #ffffff;
+  --color-base-300: #b7c9ba;
   --color-base-content: #1c2b1e;
 
   --color-primary: #1c2b1e;
-  --color-primary-content: #eef6ef;
+  --color-primary-content: #f4f7f4;
 
   --color-secondary: #7a9e7e;
   --color-secondary-content: #1c2b1e;
 
-  --color-accent: #7a9e7e;
-  --color-accent-content: #1c2b1e;
+  --color-accent: #1c2b1e;
+  --color-accent-content: #f4f7f4;
 
-  --color-neutral: #4a5c4d;
-  --color-neutral-content: #eef6ef;
+  --color-neutral: #3d5242;
+  --color-neutral-content: #f4f7f4;
 
-  --color-info: #3d6b8c;
+  --color-info: #0ea5e9;
   --color-info-content: #ffffff;
 
   --color-success: #16a34a;
   --color-success-content: #ffffff;
 
-  --color-warning: #ca8a04;
-  --color-warning-content: #1c1408;
+  --color-warning: #fbbf24;
+  --color-warning-content: #422006;
 
-  --color-error: #dc2626;
+  --color-error: #fb7185;
   --color-error-content: #ffffff;
 
-  --radius-selector: 0.625rem;
-  --radius-field: 0.5rem;
-  --radius-box: 0.875rem;
+  --radius-selector: 1rem;
+  --radius-field: 1rem;
+  --radius-box: 1.5rem;
 
   --size-selector: 0.21875rem;
   --size-field: 0.25rem;
@@ -56,38 +56,38 @@
   name: "dark";
   color-scheme: dark;
 
-  --color-base-100: #1c2b1e;
-  --color-base-200: #243528;
-  --color-base-300: #314236;
-  --color-base-content: #eef6ef;
+  --color-base-100: #171717;
+  --color-base-200: #262626;
+  --color-base-300: #404040;
+  --color-base-content: #fafafa;
 
-  --color-primary: #7a9e7e;
-  --color-primary-content: #1c2b1e;
+  --color-primary: #8fb896;
+  --color-primary-content: #142018;
 
-  --color-secondary: #314236;
-  --color-secondary-content: #eef6ef;
+  --color-secondary: #a3a3a3;
+  --color-secondary-content: #171717;
 
-  --color-accent: #e8a838;
-  --color-accent-content: #1c2b1e;
+  --color-accent: #8fb896;
+  --color-accent-content: #142018;
 
-  --color-neutral: #a8bdb0;
-  --color-neutral-content: #1c2b1e;
+  --color-neutral: #d4d4d4;
+  --color-neutral-content: #171717;
 
-  --color-info: #7eb8d4;
-  --color-info-content: #1c2b1e;
+  --color-info: #7a9e7e;
+  --color-info-content: #142018;
 
   --color-success: #16a34a;
   --color-success-content: #ffffff;
 
-  --color-warning: #ca8a04;
+  --color-warning: #f59e0b;
   --color-warning-content: #1c1408;
 
-  --color-error: #dc2626;
+  --color-error: #f43f5e;
   --color-error-content: #ffffff;
 
-  --radius-selector: 0.625rem;
-  --radius-field: 0.5rem;
-  --radius-box: 0.875rem;
+  --radius-selector: 1rem;
+  --radius-field: 1rem;
+  --radius-box: 1.5rem;
 
   --size-selector: 0.21875rem;
   --size-field: 0.25rem;
@@ -103,7 +103,7 @@
 
 @theme inline {
   --font-sans: var(--font-body), system-ui, sans-serif;
-  --font-heading: var(--font-display), Georgia, serif;
+  --font-heading: Georgia, "Times New Roman", serif;
   --font-mono: var(--font-geist-mono);
   --color-background: var(--color-base-100);
   --color-foreground: var(--color-base-content);
@@ -117,14 +117,14 @@
   --color-muted-foreground: color-mix(in oklab, var(--color-base-content) 65%, transparent);
   --color-accent-foreground: var(--color-accent-content);
   --color-destructive: var(--color-error);
-  --color-border: color-mix(in oklab, var(--color-base-content) 14%, var(--color-base-100));
-  --color-input: color-mix(in oklab, var(--color-base-content) 14%, var(--color-base-100));
-  --color-ring: var(--color-accent);
+  --color-border: color-mix(in oklab, var(--color-base-content) 12%, var(--color-base-100));
+  --color-input: color-mix(in oklab, var(--color-base-content) 12%, var(--color-base-100));
+  --color-ring: var(--color-primary);
 }
 
 @layer base {
   * {
-    @apply border-base-300/50 outline-info/40;
+    @apply border-base-300/60 outline-primary/30;
   }
   html {
     @apply font-sans antialiased;
@@ -134,11 +134,19 @@
   }
 }
 
+.sift-elevate {
+  box-shadow: 0 8px 30px rgb(0 0 0 / 0.04);
+}
+
+[data-theme="dark"] .sift-elevate {
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.35);
+}
+
 .font-display {
-  font-family: var(--font-display), Georgia, "Times New Roman", serif;
+  font-family: Georgia, "Times New Roman", serif;
 }
 
 .sift-scroll {
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in oklab, var(--color-base-content) 25%, transparent) transparent;
+  scrollbar-color: color-mix(in oklab, var(--color-base-content) 20%, transparent) transparent;
 }

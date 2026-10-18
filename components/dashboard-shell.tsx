@@ -2,16 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MotionConfig } from "framer-motion";
+import { motion, MotionConfig } from "framer-motion";
 import { Suspense, type ReactNode } from "react";
 import { SiftLogo } from "@/components/sift-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const LINKS = [
-  { href: "/dashboard", label: "Live" },
-  { href: "/dashboard/calls", label: "Calls" },
-  { href: "/dashboard/report", label: "Report" },
-  { href: "/dashboard/settings", label: "Settings" },
+  { href: "/dashboard/calls", label: "log" },
+  { href: "/dashboard", label: "dashboard" },
+  { href: "/dashboard/settings", label: "settings" },
 ];
 
 function active(pathname: string, href: string) {
@@ -22,8 +21,8 @@ function active(pathname: string, href: string) {
 function NavTabs({ pathname }: { pathname: string | null }) {
   return (
     <nav
-      className="inline-flex flex-nowrap gap-0.5 rounded-xl border border-base-300/60 bg-base-200/80 p-1 shadow-sm"
-      aria-label="Dashboard sections"
+      className="sift-elevate fixed bottom-4 left-1/2 z-20 grid w-[min(100%-2rem,24rem)] -translate-x-1/2 grid-cols-3 gap-1 rounded-full bg-base-200 p-1 md:static md:bottom-auto md:left-auto md:z-auto md:mx-auto md:mt-10 md:w-full md:max-w-md md:translate-x-0"
+      aria-label="Sections"
     >
       {LINKS.map((link) => {
         const on = pathname ? active(pathname, link.href) : false;
@@ -32,11 +31,18 @@ function NavTabs({ pathname }: { pathname: string | null }) {
             key={link.href}
             href={link.href}
             aria-current={on ? "page" : undefined}
-            className={`btn btn-sm min-h-9 rounded-xl px-3 text-sm font-semibold no-underline ${
-              on ? "btn-primary" : "btn-ghost text-base-content/80 hover:bg-base-100"
+            className={`relative flex items-center justify-center rounded-full px-2 py-2 text-center text-sm font-medium no-underline ${
+              on ? "text-primary-content" : "text-base-content/70"
             }`}
           >
-            {link.label}
+            {on ? (
+              <motion.span
+                layoutId="sift-nav-tab"
+                className="absolute inset-0 rounded-full bg-primary"
+                transition={{ type: "spring", stiffness: 380, damping: 32 }}
+              />
+            ) : null}
+            <span className="relative">{link.label}</span>
           </Link>
         );
       })}
@@ -52,32 +58,18 @@ function ActiveNav() {
 export function DashboardShell({ children }: { children: ReactNode }) {
   return (
     <MotionConfig reducedMotion="user">
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-5 sm:px-6 lg:px-8">
-        <header className="mb-4 space-y-3">
-          <div className="navbar min-h-0 rounded-box border border-base-300/50 bg-base-100 px-2 py-1.5 shadow-sm">
-            <div className="navbar-start">
-              <Link href="/dashboard" className="flex items-center gap-2.5 px-1">
-                <SiftLogo size="md" />
-                <span className="hidden sm:block">
-                  <span className="font-display block text-lg font-bold leading-none mt-2">Sift</span>
-                  <span className="text-xs text-base-content/70">Looking out for your line</span>
-                </span>
-              </Link>
-            </div>
-            <div className="navbar-end gap-2">
-              <ThemeToggle />
-              <Link href="/" className="btn btn-ghost btn-sm text-sm font-semibold h-10 w-auto rounded-xl">
-                Sign out
-              </Link>
-            </div>
-          </div>
-          <div className="flex justify-center overflow-x-auto pb-0.5 sm:justify-start">
-            <Suspense fallback={<NavTabs pathname={null} />}>
-              <ActiveNav />
-            </Suspense>
-          </div>
+      <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-4 pt-6 pb-28 sm:px-6 sm:pt-8 md:px-8 md:pt-12 md:pb-16">
+        <header className="flex items-center justify-between md:sift-elevate md:rounded-3xl md:bg-base-200 md:px-4 md:py-2.5">
+          <Link href="/dashboard" className="flex items-center gap-3" aria-label="Sift dashboard">
+            <SiftLogo size="md" />
+            <span className="font-display text-xl font-bold tracking-tight">Sift</span>
+          </Link>
+          <ThemeToggle />
         </header>
-        <main className="flex-1 pb-6">{children}</main>
+        <Suspense fallback={<NavTabs pathname={null} />}>
+          <ActiveNav />
+        </Suspense>
+        <main className="mt-6 flex flex-1 flex-col md:mt-16">{children}</main>
       </div>
     </MotionConfig>
   );

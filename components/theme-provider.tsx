@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -38,7 +39,12 @@ function readInitialTheme(): ThemeMode {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeMode>(readInitialTheme);
+  // Match SSR (`light`); sync from `<html data-theme>` after the inline script runs.
+  const [theme, setThemeState] = useState<ThemeMode>("light");
+
+  useEffect(() => {
+    setThemeState(readInitialTheme());
+  }, []);
 
   const setTheme = useCallback((mode: ThemeMode) => {
     setThemeState(mode);

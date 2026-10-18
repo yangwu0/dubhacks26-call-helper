@@ -5,7 +5,6 @@ import { useParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { ActionBadge, badgeForCall } from "@/components/action-badge";
 import { formatPhone, formatWhen } from "@/components/format";
-import { LiveTranscript } from "@/components/live-transcript";
 import { RiskGauge } from "@/components/risk-gauge";
 import { RISK_STROKE, riskTone } from "@/components/risk-tone";
 import { useSiftDirectory } from "@/components/sift-provider";
@@ -54,7 +53,7 @@ function CallDetailInner() {
   if (!call) {
     return (
       <div className={`${cardClass} card-body items-start`}>
-        <h1 className="font-display text-3xl font-extrabold">That call isn&apos;t here</h1>
+        <h1 className={pageTitle}>That call isn&apos;t here</h1>
         <Link href="/dashboard/calls" className="link link-primary mt-4 font-bold">
           Back to calls
         </Link>
@@ -91,30 +90,24 @@ function CallDetailInner() {
         </div>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
-        {call.transcript.length > 0 ? (
-          <LiveTranscript lines={call.transcript} />
-        ) : (
-          <section className={cardClass}>
-            <div className="card-body">
-              <h2 className={cardHeading}>
-                {call.classification === "scam" ? "Scam summary" : "Message"}
-              </h2>
-              <p className={`mt-3 ${bodyMuted}`}>
-                {call.summary ||
-                  call.callerIntent ||
-                  (call.status === "in_progress"
-                    ? "Sift is on the line. Transcripts are not saved."
-                    : "No summary for this call yet.")}
-              </p>
-              {call.classification !== "scam" && call.callerIntent && call.summary !== call.callerIntent ? (
-                <p className={`mt-3 ${metaMuted}`}>
-                  Also noted: {call.callerIntent}
-                </p>
-              ) : null}
-            </div>
-          </section>
-        )}
+      <div className="grid gap-5 lg:grid-cols-2">
+        <section className={cardClass}>
+          <div className="card-body">
+            <h2 className={cardHeading}>
+              {call.classification === "scam" ? "Scam summary" : "Message"}
+            </h2>
+            <p className={`mt-3 ${bodyMuted}`}>
+              {call.summary ||
+                call.callerIntent ||
+                (call.status === "in_progress"
+                  ? "Sift is on the line."
+                  : "No summary for this call yet.")}
+            </p>
+            {call.classification !== "scam" && call.callerIntent && call.summary !== call.callerIntent ? (
+              <p className={`mt-3 ${metaMuted}`}>Also noted: {call.callerIntent}</p>
+            ) : null}
+          </div>
+        </section>
         <div className="flex flex-col gap-5">
           <section className={cardClass}>
             <div className="card-body items-center">
@@ -134,7 +127,7 @@ function CallDetailInner() {
               <RiskTimeline points={call.riskTimeline} />
               <ul className="mt-3 space-y-2">
                 {call.riskReasons.map((reason) => (
-                  <li key={reason} className="rounded-box bg-base-200/70 px-3 py-2">
+                  <li key={reason} className="rounded-2xl bg-base-100 px-4 py-3 text-base">
                     {reason}
                   </li>
                 ))}
@@ -172,7 +165,7 @@ export default function CallDetailPage() {
     <Suspense
       fallback={
         <div className={`${cardClass} card-body`}>
-          <h1 className="font-display text-3xl font-extrabold">Opening the call</h1>
+          <h1 className={pageTitle}>Opening the call</h1>
         </div>
       }
     >

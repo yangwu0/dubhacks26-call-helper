@@ -1,18 +1,12 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Lexend, Libre_Baskerville } from "next/font/google";
+import { DM_Sans, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
-const bodyFont = Lexend({
+const bodyFont = DM_Sans({
   variable: "--font-body",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
-});
-
-const displayFont = Libre_Baskerville({
-  variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["400", "700"],
 });
 
 const geistMono = Geist_Mono({
@@ -32,7 +26,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       data-theme="sift"
-      className={`${bodyFont.variable} ${displayFont.variable} ${geistMono.variable} h-full text-[16px] leading-normal sm:text-[17px]`}
+      className={`${bodyFont.variable} ${geistMono.variable} h-full text-base leading-normal`}
       suppressHydrationWarning
     >
       <head>

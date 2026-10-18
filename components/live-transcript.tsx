@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef } from "react";
 import type { TranscriptLine } from "@/lib/mockCallData";
-import { bodyMuted, cardClass, cardHeading, pageEyebrow } from "@/components/styles";
+import { bodyMuted, cardBodyClass, cardClass, cardHeading, labelCaps } from "@/components/styles";
 
 const RISKY_SOURCE =
   "gift cards?|arrest(?:ed)?|\\birs\\b|warrant|social security|bitcoin|wire transfer|remote[- ]access";
@@ -43,13 +43,13 @@ export function LiveTranscript({ lines }: { lines: TranscriptLine[] }) {
     <section
       className={`${cardClass} flex h-[min(480px,calc(100vh-16rem))] min-h-[300px] flex-col`}
     >
-      <div className="card-body flex min-h-0 flex-1 flex-col pb-2 pt-6">
-        <div className="flex shrink-0 items-center justify-between gap-3">
+      <div className={`${cardBodyClass} flex min-h-0 flex-1 flex-col pb-4`}>
+        <div className="flex shrink-0 items-start justify-between gap-3">
           <div>
-            <p className={pageEyebrow}>Conversation</p>
-            <h2 className={cardHeading}>Live transcript</h2>
+            <p className={labelCaps}>Transcript</p>
+            <h2 className={`${cardHeading} mt-1`}>Live conversation</h2>
           </div>
-          <span className="badge badge-neutral badge-soft font-bold">
+          <span className="badge badge-neutral badge-soft rounded-full font-normal">
             {lines.length === 0 ? "Waiting" : `${lines.length} lines`}
           </span>
         </div>
@@ -59,8 +59,8 @@ export function LiveTranscript({ lines }: { lines: TranscriptLine[] }) {
           aria-live="polite"
         >
           {lines.length === 0 ? (
-            <p className={`rounded-box bg-base-200/70 px-5 py-10 text-center ${bodyMuted}`}>
-              The conversation will appear here, one line at a time.
+            <p className={`rounded-3xl bg-base-100 px-5 py-10 text-center ${bodyMuted}`}>
+              Lines appear here as Sift and the caller talk.
             </p>
           ) : (
             <AnimatePresence initial={false}>
@@ -74,13 +74,13 @@ export function LiveTranscript({ lines }: { lines: TranscriptLine[] }) {
                     transition={{ type: "spring", stiffness: 380, damping: 28 }}
                     className={`chat ${line.role === "agent" ? "chat-start" : "chat-end"} max-w-[95%]`}
                   >
-                    <div className="chat-header text-xs font-bold uppercase tracking-wide opacity-70">
+                    <div className={`chat-header ${labelCaps}`}>
                       {line.role === "agent" ? "Sift" : "Caller"}
                     </div>
                     <div
-                      className={`chat-bubble text-base leading-relaxed ${
+                      className={`chat-bubble rounded-3xl text-base leading-relaxed ${
                         line.role === "agent"
-                          ? "chat-bubble-secondary"
+                          ? "chat-bubble-neutral bg-base-100 text-base-content"
                           : risky
                             ? "chat-bubble-error"
                             : "chat-bubble-primary"
@@ -88,7 +88,7 @@ export function LiveTranscript({ lines }: { lines: TranscriptLine[] }) {
                     >
                       {highlight(line.text).map((part) =>
                         part.risky ? (
-                          <mark key={part.key} className="rounded-md bg-error/20 font-semibold text-error">
+                          <mark key={part.key} className="rounded-lg bg-error/20 font-semibold text-error">
                             {part.text}
                           </mark>
                         ) : (
