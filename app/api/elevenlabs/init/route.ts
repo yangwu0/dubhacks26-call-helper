@@ -1,4 +1,5 @@
 import { elevenLabsInitRequestSchema } from "@/lib/contracts";
+import { rejectIfBadSecret } from "@/lib/auth";
 import { DEMO_PHOTON_NUMBER } from "@/lib/owner-phone";
 import {
   getCallByConversation,
@@ -9,7 +10,6 @@ import {
   isNumberFlagged,
   json,
   normalizePhone,
-  rejectIfUnauthorized,
   serviceClient,
 } from "@/app/api/tools/db";
 
@@ -17,7 +17,7 @@ import {
 // The name check later picks which person the caller asked for.
 // https://elevenlabs.io/docs/eleven-agents/customization/personalization
 export async function POST(req: Request) {
-  const unauthorized = rejectIfUnauthorized(req);
+  const unauthorized = rejectIfBadSecret(req);
   if (unauthorized) return unauthorized;
 
   let body: unknown;
@@ -29,17 +29,24 @@ export async function POST(req: Request) {
 
   const parsed = elevenLabsInitRequestSchema.safeParse(body);
   if (!parsed.success) {
+    console.error("elevenlabs/init invalid body", parsed.error.message, body);
     return json({ error: "invalid body" }, 400);
   }
 
-  const { caller_id, called_number, conversation_id } = parsed.data;
+  const caller_id = parsed.data.caller_id ?? "";
+  const called_number = parsed.data.called_number ?? "";
+  const conversation_id =
+    parsed.data.conversation_id?.trim() ||
+    `conv_${parsed.data.call_sid || parsed.data.call_id || Date.now()}`;
   const callSid = parsed.data.call_sid || parsed.data.call_id || "";
   const callerNumber = normalizePhone(caller_id);
   const calledNumber = normalizePhone(called_number);
 
   try {
     const supabase = serviceClient();
-    const matched = await ownerForCalledNumber(supabase, calledNumber);
+    const matched = calledNumber
+      ? await ownerForCalledNumber(supabase, calledNumber)
+      : null;
     const existing = await getCallByConversation(supabase, conversation_id);
     let callId = existing?.id ?? "";
     let ownerId = existing?.owner_id ?? matched?.id ?? null;

@@ -58,12 +58,12 @@ export const takeMessageResponseSchema = z.object({
 // Conversation initiation webhook for Twilio and SIP trunk calls.
 // https://elevenlabs.io/docs/eleven-agents/customization/personalization
 export const elevenLabsInitRequestSchema = z.object({
-  caller_id: z.string(),
-  agent_id: z.string(),
-  called_number: z.string(),
+  caller_id: z.string().optional().default(""),
+  agent_id: z.string().optional().default(""),
+  called_number: z.string().optional().default(""),
   call_sid: z.string().optional(),
   call_id: z.string().optional(),
-  conversation_id: z.string(),
+  conversation_id: z.string().optional(),
 });
 
 export const elevenLabsInitResponseSchema = z.object({
