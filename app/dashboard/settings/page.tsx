@@ -84,7 +84,7 @@ export default function SettingsPage() {
       <p className={pageEyebrow}>Your line</p>
       <h1 className={pageTitle}>Settings</h1>
       <p className={pageSubtitle}>
-        Sift texts the phone you already use. The number people call shows up on its own.
+        People call your Sift number. Summaries land on the dashboard (no text alerts for now).
       </p>
 
       <div className={`${cardClass} mt-6`}>
@@ -95,24 +95,24 @@ export default function SettingsPage() {
               <p className="font-display text-2xl font-bold">{formatPhone(owner.siftNumber)}</p>
               <p className={metaMuted}>
                 {lineNote ||
-                  "Everyone calls this number. Sift asks who the call is for, then texts that person."}
+                  "Everyone calls this number. Sift screens the caller and logs the call here."}
               </p>
             </>
           ) : owner.phone ? (
             <>
-              <h2 className={cardHeading}>Sift texts you</h2>
+              <h2 className={cardHeading}>Your phone</h2>
               <p className="font-display text-2xl font-bold">{formatPhone(owner.phone)}</p>
               <p className={metaMuted}>
                 {lineStatus === "failed"
                   ? lineNote
-                  : "Sift connects this phone to the shared Photon line. The number to text shows up here."}
+                  : "Used when Sift needs to bridge you into a live call. The shared Photon line shows above once assigned."}
               </p>
             </>
           ) : (
             <form onSubmit={onSave} className="flex flex-col gap-4">
-              <h2 className={cardHeading}>Text me here</h2>
+              <h2 className={cardHeading}>Your phone</h2>
               <p className={metaMuted}>
-                Use the phone you already have. Sift connects it to the shared Photon line. You do not buy a number.
+                Use the phone you already have so Sift can bridge you into important calls.
               </p>
               <fieldset className="fieldset">
                 <legend className="fieldset-legend font-bold">Your phone</legend>

@@ -15,10 +15,9 @@ function required(name: string): string {
   return value;
 }
 
-// Stable Spectrum voice docs: there is no spectrum-ts call-control method yet.
-// A Photon iMessage line delivers inbound calls to ElevenLabs over SIP, and
+// A Photon SMS/voice line delivers inbound calls to ElevenLabs over SIP, and
 // ElevenLabs places outbound calls back through that same Photon SIP trunk.
-// https://photon.codes/docs/spectrum-ts/providers/voice
+// Messaging is out of scope for now.
 // https://photon.codes/docs/beta/cookbooks/voice/elevenlabs
 export const photonVoice: VoiceProvider = {
   async forwardCall(input: ForwardCallInput) {

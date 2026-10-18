@@ -280,7 +280,32 @@ export async function writeWeeklyParagraph(facts: {
   return paragraph;
 }
 
-// One argument keeps the string the post-call route already stores and texts.
+function withPeriod(text: string): string {
+  const trimmed = text.replace(/\s+/g, " ").trim();
+  if (!trimmed) return trimmed;
+  return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
+}
+
+/** Owner-facing one-liner stored on the call after summarize. */
+export function formatPostCallMessage(summary: CallSummary): string {
+  const detail = withPeriod(summary.summary);
+  if (
+    summary.classification === "scam" ||
+    summary.suggested_action === "block"
+  ) {
+    const lead = detail.replace(/[.!?]$/, "");
+    return `Blocked a likely scam (${summary.risk_score}%): ${lead}.`;
+  }
+  if (summary.suggested_action === "book") {
+    return detail;
+  }
+  if (summary.suggested_action === "forward") {
+    return detail;
+  }
+  return detail;
+}
+
+// One argument keeps the string the post-call route already stores.
 // Pass callMeta to get the validated JSON object.
 export async function summarize(transcript: string): Promise<string>;
 export async function summarize(
@@ -293,7 +318,6 @@ export async function summarize(
 ): Promise<string | CallSummary> {
   const structured = await buildSummary(transcript, callMeta ?? {});
   if (callMeta === undefined) {
-    const { formatPostCallMessage } = await import("./messaging");
     return formatPostCallMessage(structured);
   }
   return structured;

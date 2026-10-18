@@ -16,8 +16,8 @@ When an unknown number calls the owner's Twilio number:
    - **Legit and important** (scheduling, medical, school, landlord, delivery) with the name matching and risk under 40: bridge the owner into a conference with the caller. The owner hears a whisper summary first. This is the 3-way call.
    - **Scheduling:** check availability, propose two slots, book the event.
    - **Legit but routine:** take a message.
-5. After the call, Claude writes a summary. It is sent to the owner via iMessage (Photon) with a Twilio SMS fallback. The owner can reply with commands: `CALL`, `BLOCK`, `ADD`, `REPORT`.
-6. A weekly progress report (calls handled, scams blocked, meetings booked, time saved) is generated on demand and sent as a message.
+5. After the call, Claude writes a summary. It is stored on the call for the dashboard. (iMessage/SMS alerts and reply commands are disabled for now.)
+6. A weekly progress report (calls handled, scams blocked, meetings booked, time saved) is generated on demand for the dashboard.
 
 Stretch (only after everything above works):
 - **Scan:** the owner forwards a suspicious email, text, or bill photo to the Sift number and gets a verdict and a plain-English explanation.
@@ -30,7 +30,7 @@ Stretch (only after everything above works):
 - **Voice agent:** ElevenLabs Agents (conversational AI) with a Twilio phone number imported via the native integration. Agent tools are server webhooks. A conversation-initiation webhook returns dynamic variables.
 - **Voice/telephony:** behind a `VoiceProvider` interface (`lib/voice.ts`), selected by env `VOICE_PROVIDER=photon|twilio`. `twilio` is the default and the fallback: a Twilio number imported into ElevenLabs. `photon` is the target for the Photon track: a Photon Spectrum voice line (SIP) routed to the ElevenLabs agent. See "Photon-first architecture" below.
 - **LLM for summaries and scan:** Anthropic API (`@anthropic-ai/sdk`). Read the model name from env `ANTHROPIC_MODEL`.
-- **Messaging (Photon is the primary UI):** Photon Spectrum (`spectrum-ts`) for iMessage. Free tier on a shared line. Credentials: `PHOTON_PROJECT_ID` and `PHOTON_PROJECT_SECRET` from app.photon.codes. Twilio SMS remains as a fallback implementation of `MessagingProvider`.
+- **Messaging:** disabled for now (no iMessage/SMS send or inbound commands). Photon credentials are for voice/SIP and number lookup only (`PHOTON_PROJECT_ID`, `PHOTON_API_KEY`).
 - **Package manager:** pnpm. Node 20.
 
 Before using any third-party API, **read its current docs** rather than relying on memory:
@@ -39,19 +39,11 @@ Before using any third-party API, **read its current docs** rather than relying 
 - Photon: https://photon.codes/docs/spectrum-ts/introduction and https://github.com/photon-hq/spectrum-ts. Do NOT guess Photon APIs. If something is unclear (especially voice/SIP), build the interface and the fallback first and leave a clearly marked `TODO(photon)`.
 
 
-## Photon-first architecture (we are competing for the Photon track)
+## Photon voice (track)
 
-Judges reward visible, meaningful use of Photon. Make Photon central to the experience, not a bolt-on:
+Photon is the telephony front door. A Photon SMS/voice number receives the call and routes by SIP to the ElevenLabs agent. Summaries and controls live on the dashboard until messaging is re-enabled.
 
-1. **The owner's main interface is an iMessage thread with Sift** (Spectrum). Summaries, risk alerts, and commands (`CALL`, `BLOCK`, `UNBLOCK`, `ADD`, `UNDO`, `REPORT`) all live there. Use iMessage-native features where Spectrum supports them (reactions, polls for "Block / Allow", voice notes, attachments).
-2. **Voice through Photon.** Photon exposes SIP voice calls on its iMessage lines and says the same number can be messaged and called. Target design: the Photon voice line receives the call and routes it by SIP to the ElevenLabs agent (ElevenLabs supports SIP trunking; verify the exact trunk settings in its docs). The same number then continues the conversation in iMessage after the call.
-3. **Cross-channel moment for the demo:** during a scam call, the owner receives an iMessage in real time ("Possible IRS scam, 82%. Reply BLOCK"), and replying `BLOCK` ends the call and blocks the number. The owner can also text `CALL` to be bridged into a live call.
-4. **Access status is UNKNOWN.** We may not have Photon voice credentials at first (dedicated voice lines are paid). Therefore:
-   - Everything must work end to end with `VOICE_PROVIDER=twilio` and `MESSAGING_PROVIDER=photon` (or `sms`) first.
-   - Photon voice is a drop-in implementation of `VoiceProvider` once credentials exist. Implement the interface so switching is one env var.
-   - Never block other work waiting on Photon voice.
-
-`VoiceProvider` interface (define in `lib/voice.ts`): `forwardCall({callId, ownerPhone, whisperText})`, `endCall({callId})`, `callOwner({reason})`, `normalizeInboundCall(req)`. The Twilio implementation is `lib/voice-twilio.ts`. The Photon implementation is `lib/voice-photon.ts`.
+`VoiceProvider` interface (define in `lib/voice.ts`): `forwardCall({callId, ownerPhone, whisperText})`, `endCall({callId})`, `callOwner({reason})`, `normalizeInboundCall(req)`. Implementation: `lib/voice-photon.ts` (`VOICE_PROVIDER=photon`).
 
 ## Hard rules
 
@@ -147,8 +139,7 @@ All are `POST /api/tools/<name>`, JSON body, header `x-sift-secret`. Every body 
 Other endpoints:
 - `POST /api/elevenlabs/init`: Twilio personalization webhook. Receives `caller_id`, `agent_id`, `called_number`, `call_sid`. Creates the `calls` row and returns `conversation_initiation_client_data` with dynamic variables: `owner_name`, `caller_number`, `is_blocked`, `is_known_contact`, `call_sid`.
 - `POST /api/elevenlabs/post-call`: receives the transcript. Claude summarizes it, `calls` is updated, the number is auto-blocked if it was a scam, and the owner is messaged.
-- `POST /api/photon/inbound`: the owner's iMessage replies (commands). Also supports SMS via a Twilio webhook if the fallback is active.
-- `POST /api/report/weekly`: generates and sends the weekly report. `GET` returns JSON for the dashboard.
+- `POST /api/report/weekly`: generates the weekly report JSON (same as `GET`; no message send).
 - `POST /api/scan` (stretch).
 
 ## Forward / 3-way call implementation
@@ -174,9 +165,9 @@ Dark, clean, sieve-themed branding ("Sift": noise goes in, only the real calls c
 2. Name check and live risk score appear on the dashboard. ✔ must work
 3. Scam path: ends the call, blocks the number, sends the summary. ✔ must work
 4. Legit-important path: owner's phone rings, conference bridges. ✔ must work
-5. iMessage summary and reply commands. ✔ must work
+5. iMessage summary and reply commands. ○ deferred (messaging removed for now)
 6. Scheduling: free slots and booked event. ○ should work
-7. Weekly report. ○ should work
+7. Weekly report (dashboard JSON). ○ should work
 8. Scan / bill decoder. ○ stretch
 
 <!-- BEGIN:nextjs-agent-rules -->

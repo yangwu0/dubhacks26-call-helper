@@ -12,4 +12,4 @@ AI that answers your phone. This repo is the hackathon scaffold. Features are no
 
 The app is at [http://localhost:3000](http://localhost:3000). `pnpm seed` loads `.env.local` and inserts one owner (Alex Kim), 3 contacts, 6 calendar events, 2 blocked numbers, and 4 historical calls. The database write is skipped until Supabase credentials are set.
 
-`VOICE_PROVIDER=photon` and `MESSAGING_PROVIDER=photon` (Spectrum iMessage). Transcripts are not stored; post-call saves summaries or message text only.
+`VOICE_PROVIDER=photon` (SIP voice via Photon). Messaging (iMessage/SMS alerts and reply commands) is disabled for now; post-call summaries are stored on the call for the dashboard.

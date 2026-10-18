@@ -19,7 +19,7 @@ type OwnerLineRow = {
 };
 
 const VOICE_MESSAGE =
-  "Everyone calls this number. Sift asks who the call is for, then texts that person a summary.";
+  "Everyone calls this number. Sift screens the caller and logs the call on your dashboard.";
 
 async function remember(
   supabase: SupabaseClient,

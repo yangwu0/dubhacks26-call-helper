@@ -1,9 +1,7 @@
 import { after } from "next/server";
 import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
-import { summarize } from "@/lib/anthropic";
+import { formatPostCallMessage, summarize } from "@/lib/anthropic";
 import { postCallWebhookSchema, type PostCallWebhook } from "@/lib/contracts";
-import { formatPostCallMessage, getMessagingProvider } from "@/lib/messaging";
-import { DEMO_OWNER_PHONE } from "@/lib/owner-phone";
 import { SCAM_SCORE, classifyCall } from "@/lib/scoring";
 import { verifySecret } from "@/lib/auth";
 import {
@@ -47,33 +45,6 @@ function transcriptText(
 
 function callerLabel(call: CallRow): string {
   return call.caller_name || call.caller_number || "unknown caller";
-}
-
-async function sendToOwner(
-  supabase: SupabaseClient,
-  call: CallRow,
-  body: string,
-) {
-  const address = DEMO_OWNER_PHONE;
-  const channel = "imessage";
-  let sendError: string | null = null;
-  try {
-    await getMessagingProvider().send(address, body);
-  } catch (error) {
-    sendError = error instanceof Error ? error.message : "send failed";
-  }
-  const { error } = await supabase.from("messages").insert({
-    direction: "out",
-    channel,
-    address,
-    body,
-    call_id: call.id,
-  });
-  if (error) throw new Error(error.message);
-  await insertEvent(supabase, call.id, "action", {
-    step: "summary_sent",
-    send_error: sendError,
-  });
 }
 
 async function finishTranscription(
@@ -165,7 +136,10 @@ async function finishTranscription(
     if (blockError) throw new Error(blockError.message);
   }
 
-  await sendToOwner(supabase, call, summary);
+  await insertEvent(supabase, call.id, "action", {
+    step: "summary_saved",
+    summary,
+  });
 }
 
 async function finishFailure(

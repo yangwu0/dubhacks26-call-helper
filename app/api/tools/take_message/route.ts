@@ -1,6 +1,4 @@
 import { takeMessageRequestSchema } from "@/lib/contracts";
-import { getMessagingProvider } from "@/lib/messaging";
-import { DEMO_OWNER_PHONE } from "@/lib/owner-phone";
 import {
   getCallByConversation,
   insertEvent,
@@ -45,32 +43,12 @@ export async function POST(req: Request) {
       .update(update)
       .eq("id", call.id);
     if (error) throw new Error(error.message);
-    const address = DEMO_OWNER_PHONE;
-    const channel = "imessage";
-    const bodyText = `Message from ${caller_name} (${callback_number}): ${message}`;
-    let sendError: string | null = null;
-    try {
-      await getMessagingProvider().send(address, bodyText);
-    } catch (sendFailure) {
-      sendError =
-        sendFailure instanceof Error ? sendFailure.message : "send failed";
-    }
-
-    const { error: messageError } = await supabase.from("messages").insert({
-      direction: "out",
-      channel,
-      address,
-      body: bodyText,
-      call_id: call.id,
-    });
-    if (messageError) throw new Error(messageError.message);
 
     await insertEvent(supabase, call.id, "tool", {
       tool: "take_message",
       caller_name,
       callback_number,
       message,
-      send_error: sendError,
     });
 
     return json({ ok: true });
