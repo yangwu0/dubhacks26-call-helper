@@ -1,5 +1,6 @@
 "use client";
 
+import { Moon } from "lucide-react";
 import { useState } from "react";
 import { formatSaved, minutesBetween } from "@/components/format";
 import { useSiftDirectory } from "@/components/sift-provider";
@@ -44,39 +45,58 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="mx-auto flex w-full max-w-md flex-col gap-6 lg:max-w-3xl">
-      <div className="grid gap-4 lg:grid-cols-3">
+    <div className="relative mx-auto w-full max-w-md">
+      <div className="grid grid-cols-3 gap-2">
         {tiles.map((tile) => (
           <div key={tile.label} className="stats w-full bg-base-200 shadow-none">
-            <div className="stat px-4 py-3">
-              <div className="stat-title text-sm font-medium normal-case text-base-content/60">
+            <div className="stat gap-0 px-2 py-2.5 text-center">
+              <div className="stat-title text-[0.7rem] font-medium normal-case leading-tight text-base-content/60">
                 {tile.label}
               </div>
-              <div className="stat-value text-3xl font-semibold text-base-content">{tile.value}</div>
+              <div className="stat-value text-xl font-semibold leading-tight text-base-content sm:text-2xl">
+                {tile.value}
+              </div>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="flex justify-center pt-8 md:pt-4">
-        <button
-          type="button"
-          aria-pressed={available}
-          onClick={() => setAvailable((current) => !current)}
-          className={`btn btn-circle flex h-[min(78vw,20rem)]! w-[min(78vw,20rem)]! flex-col gap-1 border-0 shadow-lg ${
+      <button
+        type="button"
+        aria-pressed={available}
+        onClick={() => setAvailable((current) => !current)}
+        className={`btn btn-circle fixed bottom-[calc(5rem+max(0.75rem,env(safe-area-inset-bottom)))] left-1/2 z-20 flex h-[75vw]! max-h-[18rem]! w-[75vw]! max-w-[18rem]! -translate-x-1/2 flex-col gap-1 overflow-hidden border-0 transition-[transform,box-shadow] duration-200 ease-out active:scale-[0.97] ${
+          available
+            ? "bg-primary! text-primary-content! shadow-[0_14px_32px_-10px_rgba(28,43,30,0.55),0_4px_10px_-2px_rgba(28,43,30,0.25)] hover:bg-primary! hover:shadow-[0_18px_36px_-10px_rgba(28,43,30,0.6),0_6px_12px_-2px_rgba(28,43,30,0.28)]"
+            : "bg-base-300! text-base-content! shadow-[0_12px_28px_-10px_rgba(28,43,30,0.28),0_3px_8px_-2px_rgba(28,43,30,0.12)] hover:bg-base-300! hover:shadow-[0_16px_32px_-10px_rgba(28,43,30,0.32),0_5px_10px_-2px_rgba(28,43,30,0.16)]"
+        }`}
+      >
+        {!available ? (
+          <Moon
+            aria-hidden
+            strokeWidth={1.25}
+            className="pointer-events-none absolute size-[55%] text-base-content/20"
+          />
+        ) : null}
+        <span
+          className={`relative text-2xl font-semibold sm:text-3xl ${
             available
-              ? "bg-primary! text-primary-content! hover:bg-primary!"
-              : "bg-base-300! text-base-content! hover:bg-base-300!"
+              ? ""
+              : "[text-shadow:0_1px_3px_rgba(28,43,30,0.55),0_0_8px_rgba(220,232,222,0.65)]"
           }`}
         >
-          <span className="text-2xl font-semibold">
-            {available ? "Available" : "Do not disturb"}
-          </span>
-          <span className="max-w-[12rem] text-sm font-normal whitespace-normal opacity-80">
-            {available ? "Calls come to you" : "Sift holds the calls"}
-          </span>
-        </button>
-      </div>
+          {available ? "Available" : "Do not disturb"}
+        </span>
+        <span
+          className={`relative max-w-[12rem] text-sm font-normal whitespace-normal opacity-80 sm:text-base ${
+            available
+              ? ""
+              : "[text-shadow:0_1px_2px_rgba(28,43,30,0.45),0_0_6px_rgba(220,232,222,0.55)]"
+          }`}
+        >
+          {available ? "Calls come to you" : "Sift answers the calls"}
+        </span>
+      </button>
     </div>
   );
 }

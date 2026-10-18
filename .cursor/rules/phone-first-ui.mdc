@@ -1,0 +1,33 @@
+---
+description: Build Sift UI primarily for phone screens (mobile-first).
+globs: app/**/*.tsx,components/**/*.tsx,app/**/*.css
+alwaysApply: false
+---
+
+# Phone-first UI
+
+Design and implement pages for a phone viewport first (~390px wide). Desktop/tablet is progressive enhancement, not the default canvas.
+
+## Layout
+
+- Single column by default. Avoid multi-column grids until `md:` or later.
+- Prefer stacked lists/cards over wide tables on small screens (tables only from `md:` up if needed).
+- Keep primary actions thumb-reachable (bottom nav / sticky bottom CTA is fine; don’t bury actions in a top-only desktop chrome).
+- Respect safe areas: `pb-[max(...,env(safe-area-inset-bottom))]` on fixed bottom UI.
+- Cap content width for readability; don’t force desktop dashboard density on phones.
+
+## Interaction & type
+
+- Touch targets ≥ ~44px (`btn-md` / comfortable padding). No hover-only affordances for critical actions.
+- Body text stays readable at 16px+; don’t shrink UI to fit more widgets.
+- One clear job per screen section; reduce competing CTAs above the fold.
+
+## Implementation habits
+
+- Write base Tailwind classes for mobile; add `sm:` / `md:` / `lg:` only when needed.
+- Reuse tokens in `components/styles.ts` and the existing `DashboardShell` bottom-nav pattern.
+- When adding a new page, verify the first viewport on a phone width before polishing desktop.
+
+## Out of scope
+
+API routes, migrations, and server-only `lib/` code are unaffected by this rule.

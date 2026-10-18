@@ -6,7 +6,6 @@ import { formatPhone } from "@/components/format";
 import { useSiftDirectory } from "@/components/sift-provider";
 import { getOptionalBrowserClient } from "@/components/supabase-browser";
 import {
-  btnDanger,
   btnPrimary,
   cardClass,
   cardHeading,
@@ -19,14 +18,11 @@ import {
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { owner, flagged, lineNote, lineStatus, saveOwner, addFlagged, removeFlagged } =
-    useSiftDirectory();
+  const { owner, flagged, lineNote, lineStatus, saveOwner } = useSiftDirectory();
   const [name, setName] = useState(owner.name);
   const [aliases, setAliases] = useState(owner.aliases);
   const [phone, setPhone] = useState(owner.phone);
   const [aliasDraft, setAliasDraft] = useState("");
-  const [flagNumber, setFlagNumber] = useState("");
-  const [flagReason, setFlagReason] = useState("");
   const [note, setNote] = useState("");
   const dirty = useRef(false);
   const loadedOwner = useRef(owner.id);
@@ -39,8 +35,6 @@ export default function SettingsPage() {
     setAliases(owner.aliases);
     setPhone(owner.phone);
     setAliasDraft("");
-    setFlagNumber("");
-    setFlagReason("");
     setNote("");
   }, [owner]);
 
@@ -65,18 +59,6 @@ export default function SettingsPage() {
     markDirty();
     setAliases((current) => [...current, next]);
     setAliasDraft("");
-  }
-
-  async function onFlag(event: FormEvent) {
-    event.preventDefault();
-    const number = flagNumber.trim();
-    if (!number) return;
-    const result = await addFlagged(number, flagReason.trim() || "Flagged from settings");
-    setNote(result.message);
-    if (result.ok) {
-      setFlagNumber("");
-      setFlagReason("");
-    }
   }
 
   return (
@@ -208,57 +190,19 @@ export default function SettingsPage() {
         <section className={cardClass}>
           <div className="card-body gap-4">
             <h2 className={cardHeading}>Flagged numbers</h2>
+            <p className={metaMuted}>Numbers Sift has refused for you.</p>
             <ul className="space-y-3">
               {flagged.length === 0 ? (
                 <li className={metaMuted}>Nothing is flagged.</li>
               ) : (
                 flagged.map((item) => (
-                  <li
-                    key={item.number}
-                    className="flex items-start justify-between gap-3 rounded-box bg-base-200/60 px-4 py-3"
-                  >
-                    <div>
-                      <p className="font-semibold">{formatPhone(item.number)}</p>
-                      <p className={metaMuted}>{item.reason}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        void removeFlagged(item.number).then((result) => setNote(result.message));
-                      }}
-                      className="btn btn-ghost btn-sm text-error"
-                    >
-                      Remove
-                    </button>
+                  <li key={item.number} className="rounded-box bg-base-200/60 px-4 py-3">
+                    <p className="font-semibold">{formatPhone(item.number)}</p>
+                    {item.reason ? <p className={metaMuted}>{item.reason}</p> : null}
                   </li>
                 ))
               )}
             </ul>
-            <form onSubmit={onFlag} className="space-y-4 border-t border-base-300/50 pt-4">
-              <fieldset className="fieldset">
-                <legend className="fieldset-legend font-bold">Add a number</legend>
-                <input
-                  id="flag-number"
-                  value={flagNumber}
-                  onChange={(event) => setFlagNumber(event.target.value)}
-                  placeholder="+18005550123"
-                  className={inputClass}
-                />
-              </fieldset>
-              <fieldset className="fieldset">
-                <legend className="fieldset-legend font-bold">Reason</legend>
-                <input
-                  id="flag-reason"
-                  value={flagReason}
-                  onChange={(event) => setFlagReason(event.target.value)}
-                  placeholder="Why should Sift refuse this caller?"
-                  className={inputClass}
-                />
-              </fieldset>
-              <button type="submit" className={btnDanger}>
-                Flag number
-              </button>
-            </form>
           </div>
         </section>
       </div>

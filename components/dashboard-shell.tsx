@@ -4,21 +4,17 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { MotionConfig } from "framer-motion";
 import { Suspense, type ReactNode } from "react";
+import { BrandHeader, brandHeaderPad } from "@/components/brand-header";
 import { formatPhone } from "@/components/format";
-import { SiftLogo } from "@/components/sift-logo";
 import { useSiftDirectory } from "@/components/sift-provider";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 const LINKS = [
-  { href: "/", label: "Log" },
+  { href: "/dashboard/calls", label: "Log" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/dashboard/settings", label: "Settings" },
 ];
 
 function active(pathname: string, href: string) {
-  if (href === "/") {
-    return pathname === "/" || pathname.startsWith("/dashboard/calls");
-  }
   if (href === "/dashboard") return pathname === "/dashboard";
   return pathname === href || pathname.startsWith(`${href}/`);
 }
@@ -71,35 +67,24 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-5 sm:px-6 lg:px-8">
-        <header className="mb-8 space-y-6">
-          <div className="navbar min-h-0 rounded-none border-0 bg-transparent px-0 py-1 shadow-none md:rounded-box md:border md:border-base-300/50 md:bg-base-100 md:px-2 md:py-1.5 md:shadow-sm">
-            <div className="navbar-start">
-              <Link href="/" className="flex items-center gap-2.5 px-1">
-                <SiftLogo size="md" />
-                <span>
-                  <span className="font-display block text-lg font-bold leading-none">Sift</span>
-                  <span className="mt-1 hidden text-xs text-base-content/70 md:block">
-                    {owner.photonNumber
-                      ? formatPhone(owner.photonNumber)
-                      : owner.name || "Looking out for your line"}
-                  </span>
-                </span>
-              </Link>
-            </div>
-            <div className="navbar-end">
-              <ThemeToggle />
-            </div>
-          </div>
-          <div className="hidden md:flex md:justify-center">
-            <Suspense fallback={<NavTabs pathname={null} />}>
-              <ActiveNav />
-            </Suspense>
-          </div>
+      <div
+        className={`mx-auto flex min-h-screen w-full max-w-6xl flex-col ${brandHeaderPad} pb-5 sm:px-6 lg:px-8`}
+      >
+        <header className="mb-8">
+          <BrandHeader
+            href="/dashboard/calls"
+            end={
+              <span className="hidden text-xs text-base-content/70 md:inline">
+                {owner.photonNumber
+                  ? formatPhone(owner.photonNumber)
+                  : owner.name || "Looking out for your line"}
+              </span>
+            }
+          />
         </header>
-        <main className="flex-1 pb-28 md:pb-6">{children}</main>
+        <main className="flex-1 pb-28">{children}</main>
       </div>
-      <div className="fixed inset-x-0 bottom-0 z-30 bg-linear-to-t from-base-100 from-80% to-transparent px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-30 bg-linear-to-t from-base-100 from-80% to-transparent px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <div className="flex justify-center">
           <Suspense fallback={<NavTabs pathname={null} />}>
             <ActiveNav />
