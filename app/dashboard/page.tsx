@@ -1,10 +1,24 @@
 "use client";
 
+import Link from "next/link";
 import { Moon } from "lucide-react";
 import { useState } from "react";
-import { formatSaved, minutesBetween } from "@/components/format";
+import { ActionBadge, badgeForCall } from "@/components/action-badge";
+import { formatPhone, formatSaved, minutesBetween } from "@/components/format";
+import { riskTone } from "@/components/risk-tone";
 import { useSiftDirectory } from "@/components/sift-provider";
+import { metaMuted, riskPill } from "@/components/styles";
 import type { CallRecord } from "@/lib/mockCallData";
+
+function liveCallFrom(calls: CallRecord[]): CallRecord | null {
+  const live = calls.filter((call) => call.status === "in_progress");
+  if (live.length === 0) return null;
+  return live.reduce((latest, call) =>
+    new Date(call.startedAt).getTime() > new Date(latest.startedAt).getTime()
+      ? call
+      : latest,
+  );
+}
 
 type Stats = {
   callsHandled: number;
@@ -38,6 +52,7 @@ export default function DashboardPage() {
   const { calls } = useSiftDirectory();
   const [available, setAvailable] = useState(true);
   const stats = statsFromCalls(calls);
+  const liveCall = liveCallFrom(calls);
   const tiles = [
     { label: "calls", value: String(stats.callsHandled) },
     { label: "blocked", value: String(stats.scamsBlocked) },
@@ -60,6 +75,37 @@ export default function DashboardPage() {
           </div>
         ))}
       </div>
+
+      {liveCall ? (
+        <Link
+          href={`/dashboard/calls/${liveCall.id}`}
+          className="mt-2 block rounded-box bg-base-200 px-4 py-3 no-underline transition-colors hover:bg-base-300/70"
+          aria-live="polite"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate font-semibold text-base-content">
+                {liveCall.callerName || "Unknown caller"}
+              </p>
+              <p className={metaMuted}>{formatPhone(liveCall.callerNumber)}</p>
+            </div>
+            <span className={riskPill[riskTone(liveCall.riskScore)]}>{liveCall.riskScore}</span>
+          </div>
+          <div className="mt-2">
+            <ActionBadge status={badgeForCall(liveCall)} />
+          </div>
+          {liveCall.riskReasons[0] ? (
+            <p className={`mt-2 truncate ${metaMuted}`}>{liveCall.riskReasons[0]}</p>
+          ) : null}
+        </Link>
+      ) : (
+        <div
+          className="mt-2 rounded-box bg-base-200/80 px-4 py-3 text-center text-sm text-base-content/55"
+          aria-live="polite"
+        >
+          No current live call
+        </div>
+      )}
 
       <button
         type="button"

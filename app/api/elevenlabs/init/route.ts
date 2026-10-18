@@ -112,6 +112,8 @@ export async function POST(req: Request) {
         is_blocked: flagged,
         is_known_contact: known,
         call_sid: callSid,
+        // Temporary always-true flag for agent prompt testing; replace later.
+        temp_flag: true,
       },
     });
   } catch (error) {

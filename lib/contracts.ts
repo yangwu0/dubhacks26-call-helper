@@ -74,6 +74,8 @@ export const elevenLabsInitResponseSchema = z.object({
     is_blocked: z.boolean(),
     is_known_contact: z.boolean(),
     call_sid: z.string(),
+    // Temporary always-true flag for agent prompt testing; replace later.
+    temp_flag: z.boolean(),
   }),
 });
 
