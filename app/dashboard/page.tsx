@@ -49,8 +49,8 @@ function statsFromCalls(calls: CallRecord[]): Stats {
 }
 
 export default function DashboardPage() {
-  const { calls } = useSiftDirectory();
-  const [available, setAvailable] = useState(true);
+  const { calls, owner, setDndOn } = useSiftDirectory();
+  const available = !owner.isDndOn;
   const stats = statsFromCalls(calls);
   const liveCall = liveCallFrom(calls);
   const tiles = [

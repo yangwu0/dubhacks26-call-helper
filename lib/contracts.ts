@@ -69,13 +69,12 @@ export const elevenLabsInitRequestSchema = z.object({
 export const elevenLabsInitResponseSchema = z.object({
   type: z.literal("conversation_initiation_client_data"),
   dynamic_variables: z.object({
-    owner_name: z.string(),
+    user_name: z.string(),
     caller_number: z.string(),
     is_blocked: z.boolean(),
     is_known_contact: z.boolean(),
     call_sid: z.string(),
-    // Temporary always-true flag for agent prompt testing; replace later.
-    temp_flag: z.boolean(),
+    is_dnd_on: z.boolean(),
   }),
 });
 

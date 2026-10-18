@@ -146,6 +146,7 @@ export function mapOwner(row: Record<string, unknown>): OwnerProfile {
     aliases: stringList(row.aliases),
     phone: text(row.phone),
     photonNumber: text(row.photon_number),
+    isDndOn: row.is_dnd_on === true || row.isDndOn === true,
   };
 }
 

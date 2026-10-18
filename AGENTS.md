@@ -83,7 +83,11 @@ All are `POST /api/tools/<name>`, JSON body, header `x-sift-secret`. Every body 
 | `take_message` | `{conversation_id, caller_name, callback_number, message}` | `{ok}` |
 
 Other endpoints:
+<<<<<<< Updated upstream
 - `POST /api/elevenlabs/init`: Twilio personalization webhook. Receives `caller_id`, `agent_id`, `called_number`, `call_sid`. Creates the `calls` row and returns `conversation_initiation_client_data` with dynamic variables: `owner_name`, `caller_number`, `is_blocked`, `is_known_contact`, `call_sid`, `temp_flag` (temporary always `true` for agent testing).
+=======
+- `POST /api/elevenlabs/init`: Twilio personalization webhook. Receives `caller_id`, `agent_id`, `called_number`, `call_sid`. Creates the `calls` row and returns `conversation_initiation_client_data` with dynamic variables: `user_name`, `caller_number`, `is_blocked`, `is_known_contact`, `call_sid`, `is_dnd_on` (from `owners.is_dnd_on`; true when dashboard Do not disturb is on).
+>>>>>>> Stashed changes
 - `POST /api/elevenlabs/post-call`: receives the transcript. Claude summarizes it, `calls` is updated, the number is auto-blocked if it was a scam, and the owner is messaged.
 - `POST /api/report/weekly`: generates the weekly report JSON (same as `GET`; no message send).
 - `POST /api/scan` (stretch).

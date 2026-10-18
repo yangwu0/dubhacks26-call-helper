@@ -22,6 +22,7 @@ type SiftDirectory = {
   lineNote: string;
   lineStatus: "" | "ready" | "pending" | "failed" | "unconfigured";
   saveOwner: (next: OwnerProfile) => Promise<SaveResult>;
+  setDndOn: (on: boolean) => Promise<SaveResult>;
   addFlagged: (number: string, reason: string) => Promise<SaveResult>;
   removeFlagged: (number: string) => Promise<SaveResult>;
 };
@@ -40,6 +41,7 @@ const EMPTY_OWNER: OwnerProfile = {
   aliases: [],
   phone: "",
   photonNumber: "",
+  isDndOn: false,
 };
 
 const SiftContext = createContext<SiftDirectory | null>(null);
@@ -91,6 +93,7 @@ export function SiftProvider({ children }: { children: ReactNode }) {
         aliases?: unknown;
         phone?: unknown;
         photonNumber?: unknown;
+        isDndOn?: unknown;
         error?: unknown;
       } | null;
       if (cancelled || current !== request) return;
@@ -110,6 +113,7 @@ export function SiftProvider({ children }: { children: ReactNode }) {
         aliases: accountBody.aliases,
         phone: accountBody.phone,
         photon_number: accountBody.photonNumber,
+        isDndOn: accountBody.isDndOn,
       });
       const [callsRes, flaggedRes] = await Promise.all([
         supabase
@@ -322,12 +326,14 @@ export function SiftProvider({ children }: { children: ReactNode }) {
             name: next.name,
             aliases: next.aliases,
             phone: next.phone,
+            isDndOn: next.isDndOn,
           }),
         });
         const body = (await response.json().catch(() => null)) as {
           message?: unknown;
           error?: unknown;
           phone?: unknown;
+          isDndOn?: unknown;
         } | null;
         if (!response.ok) {
           const error = body && typeof body.error === "string" ? body.error : "";
@@ -335,10 +341,57 @@ export function SiftProvider({ children }: { children: ReactNode }) {
         }
         if (body && typeof body.phone === "string") {
           setOwner((current) =>
-            current.id === next.id ? { ...current, phone: body.phone as string } : current,
+            current.id === next.id
+              ? {
+                  ...current,
+                  phone: body.phone as string,
+                  isDndOn:
+                    typeof body.isDndOn === "boolean" ? body.isDndOn : current.isDndOn,
+                }
+              : current,
           );
         }
         const message = body && typeof body.message === "string" ? body.message : "Saved.";
+        return { ok: true, message };
+      },
+      async setDndOn(on) {
+        const previous = owner.isDndOn;
+        setOwner((current) => ({ ...current, isDndOn: on }));
+        const supabase = getOptionalBrowserClient();
+        if (!supabase || !owner.id) {
+          setOwner((current) => ({ ...current, isDndOn: previous }));
+          return { ok: false, message: "Sign in again before changing availability." };
+        }
+        const session = await supabase.auth.getSession();
+        const token = session.data.session?.access_token ?? "";
+        if (!token) {
+          setOwner((current) => ({ ...current, isDndOn: previous }));
+          return { ok: false, message: "Sign in again before changing availability." };
+        }
+        const response = await fetch("/api/account", {
+          method: "PATCH",
+          headers: {
+            authorization: `Bearer ${token}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({ isDndOn: on }),
+        });
+        const body = (await response.json().catch(() => null)) as {
+          message?: unknown;
+          error?: unknown;
+          isDndOn?: unknown;
+        } | null;
+        if (!response.ok) {
+          setOwner((current) => ({ ...current, isDndOn: previous }));
+          const error = body && typeof body.error === "string" ? body.error : "";
+          return { ok: false, message: error || "Couldn't update Do not disturb." };
+        }
+        setOwner((current) => ({
+          ...current,
+          isDndOn: body?.isDndOn === true,
+        }));
+        const message =
+          body && typeof body.message === "string" ? body.message : "Saved.";
         return { ok: true, message };
       },
       async addFlagged(number, reason) {

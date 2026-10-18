@@ -107,13 +107,12 @@ export async function POST(req: Request) {
     return json({
       type: "conversation_initiation_client_data",
       dynamic_variables: {
-        owner_name: owner?.name ?? "this number",
+        user_name: owner?.name ?? "Ethan",
         caller_number: callerNumber,
         is_blocked: flagged,
         is_known_contact: known,
         call_sid: callSid,
-        // Temporary always-true flag for agent prompt testing; replace later.
-        temp_flag: true,
+        is_dnd_on: owner?.is_dnd_on === true,
       },
     });
   } catch (error) {

@@ -41,6 +41,7 @@ export type OwnerProfile = {
   aliases: string[];
   phone: string;
   photonNumber: string;
+  isDndOn: boolean;
 };
 
 export type FlaggedNumber = {
@@ -139,6 +140,7 @@ export const MOCK_OWNER: OwnerProfile = {
   aliases: ["Alex", "Alexander Kim"],
   phone: "+12065550100",
   photonNumber: "",
+  isDndOn: false,
 };
 
 export const MOCK_FLAGGED: FlaggedNumber[] = [

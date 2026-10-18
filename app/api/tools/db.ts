@@ -11,6 +11,7 @@ export type OwnerRow = {
   phone: string;
   timezone: string | null;
   photon_number: string | null;
+  is_dnd_on: boolean;
 };
 
 export type CallRow = {
@@ -59,7 +60,8 @@ export function asStringArray(value: unknown): string[] {
   return value.filter((item): item is string => typeof item === "string");
 }
 
-const OWNER_COLUMNS = "id, name, aliases, phone, timezone, photon_number";
+const OWNER_COLUMNS =
+  "id, name, aliases, phone, timezone, photon_number, is_dnd_on";
 
 function samePhone(left: string, right: string): boolean {
   if (!left.trim() || !right.trim()) return false;

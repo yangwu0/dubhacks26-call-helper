@@ -103,8 +103,8 @@ async function main() {
     conversation_id: legit,
   });
   assert("init", init, (body) => {
-    const data = body as { dynamic_variables?: { owner_name?: string } };
-    return Boolean(data.dynamic_variables?.owner_name);
+    const data = body as { dynamic_variables?: { user_name?: string } };
+    return Boolean(data.dynamic_variables?.user_name);
   });
 
   assert(

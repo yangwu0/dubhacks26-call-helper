@@ -13,6 +13,7 @@ function accountPayload(owner: {
   aliases: string[] | null;
   phone: string;
   photon_number?: string | null;
+  is_dnd_on?: boolean | null;
 }) {
   return {
     id: owner.id,
@@ -20,6 +21,7 @@ function accountPayload(owner: {
     aliases: owner.aliases ?? [],
     phone: owner.phone,
     photonNumber: owner.photon_number ?? "",
+    isDndOn: owner.is_dnd_on === true,
     encrypted: true,
   };
 }
@@ -47,7 +49,30 @@ export async function PATCH(req: Request) {
       return json({ error: "Send the profile as JSON." }, 400);
     }
     const record = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
-    const name = typeof record.name === "string" ? record.name.trim() : "";
+    const hasDnd = typeof record.isDndOn === "boolean";
+    const hasName = typeof record.name === "string";
+
+    // DND-only toggle from the dashboard Available button.
+    if (hasDnd && !hasName) {
+      const saved = await serviceClient()
+        .from("owners")
+        .update({ is_dnd_on: record.isDndOn as boolean })
+        .eq("id", owner.id)
+        .select("id")
+        .maybeSingle();
+      if (saved.error) return json({ error: saved.error.message }, 500);
+      if (!saved.data) return json({ error: "Could not save Do not disturb." }, 404);
+      return json({
+        ok: true,
+        message: (record.isDndOn as boolean) ? "Do not disturb on." : "Available.",
+        ...accountPayload({
+          ...owner,
+          is_dnd_on: record.isDndOn as boolean,
+        }),
+      });
+    }
+
+    const name = hasName ? (record.name as string).trim() : "";
     const phone = typeof record.phone === "string" ? record.phone.trim() : "";
     const aliases = asStringArray(record.aliases)
       .map((alias) => alias.trim())
@@ -63,6 +88,7 @@ export async function PATCH(req: Request) {
       return json({ error: "Enter your phone with the country code, like +12065550100." }, 400);
     }
     const previousPhone = owner.phone.trim();
+    const nextDnd = hasDnd ? (record.isDndOn as boolean) : owner.is_dnd_on === true;
 
     const sealed = sealOwner({
       id: owner.id,
@@ -76,6 +102,7 @@ export async function PATCH(req: Request) {
         name: sealed.name,
         aliases: sealed.aliases,
         phone: sealed.phone,
+        is_dnd_on: nextDnd,
       })
       .eq("id", owner.id)
       .select("id")
@@ -95,6 +122,7 @@ export async function PATCH(req: Request) {
         aliases,
         phone: nextPhone,
         photon_number: owner.photon_number,
+        is_dnd_on: nextDnd,
       }),
     });
   } catch (error) {

@@ -8,7 +8,8 @@ create table owners (
   aliases text[] default '{}',
   phone text not null,
   timezone text default 'America/Los_Angeles',
-  photon_number text
+  photon_number text,
+  is_dnd_on boolean not null default false
 );
 
 create table calls (
