@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { Moon } from "lucide-react";
-import { useState } from "react";
 import { ActionBadge, badgeForCall } from "@/components/action-badge";
 import { formatPhone, formatSaved, minutesBetween } from "@/components/format";
 import { riskTone } from "@/components/risk-tone";
@@ -110,7 +109,9 @@ export default function DashboardPage() {
       <button
         type="button"
         aria-pressed={available}
-        onClick={() => setAvailable((current) => !current)}
+          onClick={() => {
+            void setDndOn(available);
+          }}
         className={`btn btn-circle fixed bottom-[calc(5rem+max(0.75rem,env(safe-area-inset-bottom)))] left-1/2 z-20 flex h-[75vw]! max-h-[18rem]! w-[75vw]! max-w-[18rem]! -translate-x-1/2 flex-col gap-1 overflow-hidden border-0 transition-[transform,box-shadow] duration-200 ease-out active:scale-[0.97] ${
           available
             ? "bg-primary! text-primary-content! shadow-[0_14px_32px_-10px_rgba(28,43,30,0.55),0_4px_10px_-2px_rgba(28,43,30,0.25)] hover:bg-primary! hover:shadow-[0_18px_36px_-10px_rgba(28,43,30,0.6),0_6px_12px_-2px_rgba(28,43,30,0.28)]"
