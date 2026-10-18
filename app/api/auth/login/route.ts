@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { sealOwner } from "@/lib/account-crypto";
-import { getOwnerByUserId, normalizePhone } from "@/app/api/tools/db";
+import { getOwnerByUserId } from "@/app/api/tools/db";
 import { DEMO_OWNER_PHONE, DEMO_PHOTON_NUMBER } from "@/lib/owner-phone";
 import { createServiceClient } from "@/lib/supabase";
 
@@ -41,11 +41,6 @@ export async function POST(req: Request) {
   const record = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
   const email = typeof record.email === "string" ? record.email.trim().toLowerCase() : "";
   const password = typeof record.password === "string" ? record.password : "";
-  const phoneRaw = typeof record.phone === "string" ? record.phone.trim() : "";
-  const ownerPhone = phoneRaw ? normalizePhone(phoneRaw) : "";
-  if (ownerPhone && !ownerPhone.startsWith("+")) {
-    return json({ error: "Enter your phone with the country code, like +12065550100." }, 400);
-  }
   if (!email.includes("@") || password.length < 6) {
     return json(
       { error: "Use an email and a password of at least 6 characters." },
@@ -131,13 +126,13 @@ export async function POST(req: Request) {
     );
   }
 
-  const demoPhone = ownerPhone || DEMO_OWNER_PHONE;
   if (!existing.data) {
+    // Demo: always stamp the shared owner phone, ignore signup form value.
     const sealed = sealOwner({
       id: userId,
       name: displayName(email),
       aliases: [],
-      phone: demoPhone,
+      phone: DEMO_OWNER_PHONE,
     });
     const inserted = await admin.from("owners").insert({
       ...sealed,
@@ -145,13 +140,21 @@ export async function POST(req: Request) {
       photon_number: DEMO_PHOTON_NUMBER,
     });
     if (inserted.error) return json({ error: inserted.error.message }, 500);
+
+    // Testing: wipe shared call history whenever a new account is created.
+    const cleared = await admin
+      .from("calls")
+      .delete()
+      .gte("started_at", "1970-01-01T00:00:00.000Z");
+    if (cleared.error) {
+      console.error("clear calls on signup", cleared.error.message);
+    }
   } else {
     const owner = await getOwnerByUserId(admin, userId);
     if (owner) {
-      const nextPhone = owner.phone.trim() || demoPhone;
       const sealed = sealOwner({
         ...owner,
-        phone: nextPhone,
+        phone: DEMO_OWNER_PHONE,
       });
       const updated = await admin
         .from("owners")

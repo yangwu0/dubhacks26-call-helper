@@ -19,13 +19,11 @@ export function CallLog() {
   return (
     <div>
       <h1 className={pageTitle}>Log</h1>
-      <p className={pageSubtitle}>
-        Live call log for the demo account. Calls from Photon / ElevenLabs show up here.
-      </p>
+      <p className={pageSubtitle}>Calls Sift screened for you.</p>
       <ul className="mt-6 flex flex-col gap-3 md:hidden">
         {calls.length === 0 ? (
           <li className="rounded-box bg-base-200 px-4 py-8 text-base-content/65">
-            No calls yet. Dial the Photon number to create one.
+            No calls yet.
           </li>
         ) : (
           calls.map((call) => {
@@ -68,7 +66,7 @@ export function CallLog() {
                 {calls.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="py-10 text-base-content/65">
-                      No calls yet. Dial the Photon number to create one.
+                      No calls yet.
                     </td>
                   </tr>
                 ) : (

@@ -98,6 +98,8 @@ Other endpoints:
 
 ## Dashboard (the demo's visual)
 
+**Phone-first.** Design for ~390px screens first; desktop is enhancement. Prefer stacked lists over tables, thumb-reachable actions, and the existing bottom nav on small viewports.
+
 Dark, clean, sieve-themed branding ("Sift": noise goes in, only the real calls come through). Pages:
 - `/` **Live**: big animated risk meter, live transcript, current action badge, last 5 calls. Uses Supabase Realtime.
 - `/calls`, `/calls/[id]`: call log and detail (transcript, risk reasons timeline, summary).
